@@ -27,6 +27,20 @@ teacher_db = []
 next_student_id = 1
 next_teacher_id = 1
 
+# --- binary search through the list ---
+def binary_search(lst, target):
+    """Performs a binary search on a sorted list of students or teachers."""
+    left, right = 0, len(lst) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if lst[mid].id == target:
+            return lst[mid]
+        elif lst[mid].id < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return None
+
 
 # --- Core Helper Functions ---
 def add_teacher(name, speciality):
@@ -70,11 +84,13 @@ def find_students(term):
     # After the loop, if the results list is empty, print "No match found."
     if not student_lst:
         print("No match found.")
+        return None
     # Otherwise, print the details for each student in the results list.
     else:
         for student in student_lst:
             print("\n--- Found Student List ---")
             print(f"  ID: {student.id}, Name: {student.name}, Enrolled in: {student.enrolled_in}")
+            return student_lst
 
 def find_teachers(term):
     """Finds teachers by name or speciality."""
@@ -131,6 +147,19 @@ def front_desk_enrol(student_id, instrument):
         # TODO: If the student is not found, print an error message like "Error: Student ID not found."
         print(f"Error: Student ID {student_id} not found.")
 
+def remove_student(term):
+    """High-level function to remove a student from the database"""
+    index = binary_search(student_db, term)
+    if index != None:
+        last_student = student_db[len(student_db) - 1]  # find the last student
+        student_db[len(student_db) - 1] = None          # replace the original last to be None
+        student_name = student_db[index].name           # the deleted student name
+        student_db[index] = last_student                # replace the removed one with last student
+        print(f"Student '{student_name}' has been removed successfully.")
+    else:
+        print("No match found.") 
+
+        
 def front_desk_lookup(term):
     """High-level function to search everything."""
     print(f"\n--- Performing lookup for '{term}' ---")
