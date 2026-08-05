@@ -1,4 +1,5 @@
 # MSMS.py - The In-Memory Prototype
+from typing import List
 
 # --- Data Models ---
 class Student:
@@ -19,7 +20,6 @@ class Teacher:
         self.name = name
         self.speciality = speciality
 
-
 # --- In-Memory Databases ---
 # TODO: Create the global data stores.
 student_db = []
@@ -34,13 +34,45 @@ def binary_search(lst, target):
     while left <= right:
         mid = (left + right) // 2
         if lst[mid].id == target:
-            return lst[mid]
+            return mid
         elif lst[mid].id < target:
             left = mid + 1
         else:
             right = mid - 1
     return None
 
+# --- merge sort through the list ---
+def merge(lst1, lst2):
+    new_lst = []
+
+    i, j = 0, 0
+    while i < len(lst1) or j < len(lst2):
+        if lst1[i].id > lst2[j].id :
+            new_lst.append(lst2[j])
+            j += 1
+        else:
+            new_lst.append(lst1[i])
+            i += 1
+
+    if i < len(lst1):
+        new_lst += lst1[i:]
+    elif j < len(lst2):
+        new_lst += lst2[j:]
+
+    return new_lst 
+
+def merge_sort(lst):
+    if len(lst) > 1:
+        mid = len(lst) // 2
+
+        # divide the list into left and right part
+        lst1 = merge_sort(lst[mid:])
+        lst2 = merge_sort(lst[:mid])
+
+        return merge(lst1, lst2)
+    else:
+        print("There's nothing in the list. ")
+        return lst
 
 # --- Core Helper Functions ---
 def add_teacher(name, speciality):
@@ -147,15 +179,53 @@ def front_desk_enrol(student_id, instrument):
         # TODO: If the student is not found, print an error message like "Error: Student ID not found."
         print(f"Error: Student ID {student_id} not found.")
 
-def remove_student(term):
-    """High-level function to remove a student from the database"""
-    index = binary_search(student_db, term)
+def find_id(name: str):
+    """
+    Helper function to find id via name.
+    :complexity
+        Best-case = O(1), Worst-case = O(n),
+        n is the number of students or teachers.
+    """
+    choice = input("student or teacher? (s/t): ")
+    choice = choice[0].lower()
+    match choice:
+        case "s":
+            for student in student_db:
+                if student.name == name:
+                    return [student.id, "s"] 
+        case "t":
+            for teacher in teacher_db:
+                if teacher.name == name:
+                    return [teacher.id, "t"]
+    return [None, None]
+
+def remove_data(term):
+    """
+    High-level function to remove a student or teacher from the database
+    :complexity
+        Best-case = Worst-case = O(nlogn),
+        n is the length of the database or list.
+    Merge sort will have average complexity O(nlogn), while binary search with best case O(1),
+    and worst case O(logn), and final list remove function is O(n).
+    """
+    result = find_id(term)
+    id = result[0]                                      # find the id from name
+    choice = result[1]
+    tempo_lst = []
+    match choice:
+        case "s":
+            tempo_lst = merge_sort(student_db)          # sort the database through id 
+        case "t":
+            tempo_lst = merge_sort(teacher_db)                  
+    index = binary_search(tempo_lst, id)                # find the targeted index
     if index != None:
-        last_student = student_db[len(student_db) - 1]  # find the last student
-        student_db[len(student_db) - 1] = None          # replace the original last to be None
-        student_name = student_db[index].name           # the deleted student name
-        student_db[index] = last_student                # replace the removed one with last student
-        print(f"Student '{student_name}' has been removed successfully.")
+        match choice:                                   # remove element according to database
+            case "s":
+                student_db.remove(student_db[index])    
+                print(f"Student '{term}' has been removed successfully.")
+            case "t":
+                teacher_db.remove(teacher_db[index])
+                print(f"Student '{term}' has been removed successfully.")
     else:
         print("No match found.") 
 
@@ -181,6 +251,7 @@ def main():
         print("3. Lookup Student or Teacher")
         print("4. (Admin) List all Students")
         print("5. (Admin) List all Teachers")
+        print("6. (Admin) Remove staff / student")
         print("q. Quit")
         
         choice = input("Enter your choice: ")
@@ -206,6 +277,8 @@ def main():
             list_students()
         elif choice == '5':
             list_teachers()
+        elif choice == '6':
+            remove_data(input("Enter the name: "))
         elif choice.lower() == 'q':
             print("Exiting program. Goodbye!")
             break
