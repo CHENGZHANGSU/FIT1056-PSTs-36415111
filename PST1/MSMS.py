@@ -1,5 +1,5 @@
 # MSMS.py - The In-Memory Prototype
-from typing import List
+import pandas as pd
 
 # --- Data Models ---
 class Student:
@@ -236,6 +236,45 @@ def front_desk_lookup(term):
     find_students(term)
     find_teachers(term)
 
+# --- Transform database into csv file ---
+def database_to_csv(term) -> bool:
+    match term:
+        case "s":
+            data = [vars(student) for student in student_db]
+            if data:
+                df = pd.DataFrame(data=data)
+                df.to_csv("Student List.csv", index=False, encoding="utf-8")
+                print("Student List has already generated successfully.")
+                return True
+            else:
+                print("There's currently nothing in the student database.")
+                return False
+        case "t":
+            data = [vars(teacher) for teacher in teacher_db]
+            if data:
+                df = pd.DataFrame(data=data)
+                df.to_csv("Teacher List.csv", index=False, encoding="utf-8")
+                print("Teacher List has already generated successfully.")
+                return True
+            else:
+                print("There's currently nothing in the teacher database.")
+                return False
+    return False
+
+def database_csv_navigator(term):
+    user_input = term
+    while True:
+        if user_input.lower() == "s" or user_input.lower() == "t":
+            if not database_to_csv(user_input.lower()):
+                print("There is some hidden issue, please check the database and try again.")
+            break
+        elif user_input.lower() == "q":
+            print("Exiting CSV generation.")
+            break
+        else:
+            user_input = input("Please enter (s/t) for student or teacher: ")
+    
+
 
 # --- Main Application ---
 def main():
@@ -252,6 +291,7 @@ def main():
         print("4. (Admin) List all Students")
         print("5. (Admin) List all Teachers")
         print("6. (Admin) Remove staff / student")
+        print("p. (Admin) Print database to .csv")
         print("q. Quit")
         
         choice = input("Enter your choice: ")
@@ -279,6 +319,8 @@ def main():
             list_teachers()
         elif choice == '6':
             remove_data(input("Enter the name: "))
+        elif choice == 'p':
+            database_csv_navigator(input("student or teacher? (s/t): "))
         elif choice.lower() == 'q':
             print("Exiting program. Goodbye!")
             break
