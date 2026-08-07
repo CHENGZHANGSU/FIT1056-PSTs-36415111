@@ -2,7 +2,7 @@
 
 ## Overview
 
-MSMS (Music School Management System) is an educational prototype that demonstrates how a small, in-memory application can evolve into a production-ready system across five staged upgrades. The Stage 1 implementation in this folder is a single-file CLI prototype (`MSMS.py`) that models Students and Teachers, supports registration and enrolment, and includes simple search and sorting utilities for learning purposes.
+MSMS (Music School Management System) is an educational prototype that demonstrates how a small, in-memory application can evolve into a production-ready system across five staged upgrades. The Stage 1 implementation in this folder is a single-file CLI prototype (`MSMS.py`) that models Students and Teachers, supports registration and enrolment, and includes simple search and sorting utilities for searching purposes.
 
 This README documents the Stage 1 behaviour, the staged roadmap, and guidance for progressing the project to production-quality software.
 
@@ -21,14 +21,15 @@ This README documents the Stage 1 behaviour, the staged roadmap, and guidance fo
 
 - In-memory data models: `Student` and `Teacher` objects with simple attributes.
 - Basic front-desk CLI: register students, enrol students, lookup records, list and remove entries.
-- Educational algorithms: `merge_sort` and `binary_search` implemented over object lists.
+- Educational algorithms: `merge_sort` and `binary_search` implemented over object lists to perform stable searching and sorting.
 - Case-insensitive search helpers for student and teacher lookup.
+- From list of objects to csv file in `database_csv_navigator` function, for providing more obvious and convenient for offline data management. 
 
 ## Staged Roadmap
 
 The project is designed to progress through five stages. Each stage should be implemented as an incremental upgrade to the previous stage.
 
-- Stage 1 — Prototype: single-file script with in-memory lists and a CLI (`MSMS.py`).
+- Stage 1 — Prototype: single-file script with in-memory lists and a CLI(command line interface) (`MSMS.py`).
 - Stage 2 — Upgrade.
 - Stage 3 — Architecture.
 - Stage 4 — User Interface.
@@ -37,6 +38,7 @@ The project is designed to progress through five stages. Each stage should be im
 ## Installation
 
 Requirements: Python 3.8+
+Current project is run on Python 3.14.5.
 
 1. Clone this repository and open the `PST1` folder.
 2. (Optional) Create a virtual environment and activate it:
@@ -46,7 +48,12 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-3. (Stage 1) No external dependencies are required. If you add libraries later, record them in `requirements.txt`.
+3. (Stage 1) One external dependencies are required. If  add libraries later, recorded in `requirements.txt`.
+- Pandas library
+    - Install pandas to your virtual environment.
+```
+pip install pandas
+```
 
 ## Usage
 
@@ -58,22 +65,23 @@ python MSMS.py
 
 Menu operations include:
 - Register a new student and enrol them in an instrument.
-- Enrol an existing student by ID.
-- Lookup students or teachers by name or speciality.
+- Enrol an existing student by id.
+- Lookup students or teachers by name or speciality (for teachers).
 - List all students or teachers (admin).
 - Remove a student or teacher by name (admin).
+- Output students or teachers' database with .csv file (admin). 
 
 Notes:
-- Data is stored in memory only and will be lost when the program exits.
-- The CLI prompts are minimal by design; input validation and confirmations are planned for Stage 2.
+- Data is stored in memory only and will be lost when the program exits, use the csv function to store your changes offline or to device.
+- The CLI prompts are minimal by design; input validation and confirmations are planned further.
 
 ## Development notes
 
-- Key functions live in `MSMS.py` for Stage 1; refactor into modules for Stage 2.
-- `merge_sort` and `binary_search` are implemented for educational clarity. For production use, prefer Python's built-ins (`sorted`, `bisect`) and a proper indexed datastore.
+- Key functions live in `MSMS.py` for Stage 1; refactor into modules for Stage 2 or further.
+- `merge_sort` and `binary_search` are implemented for special needs in python objects comparison. 
 - Consider adding type annotations, logging, and structured error handling before adding persistence.
 
-## Contributing
+## How to Contribute?
 
 Suggested workflow:
 
@@ -84,11 +92,12 @@ Suggested workflow:
 
 ## Tests
 
-Stage 1 contains no formal tests. When you refactor (Stage 2) and add API or persistence (Stages 3–4), include `pytest` tests for:
+Stage 1 contains basic unit tests for core and front desk function, shown in `test.py` for:
 
-- model constructors and validation
-- front-desk flows (`front_desk_register`, `front_desk_enrol`)
-- search and sort utilities
+- teachers and students database construction
+- front-desk working flows and logic (`front_desk_register`, `front_desk_enrol`)
+- search and sort utilities for remove function
+- `database_to_csv` function is checked manually. 
 
 ## Credits
 
@@ -96,4 +105,8 @@ Author: SU CHENGZHANG and teaching materials provided by Monash University Malay
 
 ## License
 
-This work is provided for educational purposes. Add a permissive open-source license when publishing.
+This work is provided for educational purposes. Add a permissive open-source license when publishing later if needed.
+
+## Reference
+- The format of readme file is taken from links below as a reference.
+- 2022 edX Boot Camps LLC. . (2024). Professional README guide. In coding-boot-camp.github.io. https://coding-boot-camp.github.io/full-stack/github/professional-readme-guide
