@@ -10,6 +10,9 @@ class Student:
         # TODO: Initialize an empty list called 'enrolled_in' to store instrument names.
         self.enrolled_in = []
 
+    def __str__(self) -> str:
+        return f"{self.id}, {self.name}, {self.enrolled_in}"
+
     
 class Teacher:
     """A blueprint for teacher objects."""
@@ -19,6 +22,9 @@ class Teacher:
         self.id = teacher_id
         self.name = name
         self.speciality = speciality
+
+    def __str__(self) -> str:
+        return f"{self.id}, {self.name}, {self.speciality}"
 
 # --- In-Memory Databases ---
 # TODO: Create the global data stores.
@@ -43,18 +49,21 @@ def binary_search(lst, target):
 
 # --- merge sort through the list ---
 def merge(lst1, lst2):
+    """
+    Sub-function to sort two lists into one. 
+    """
     new_lst = []
 
     i, j = 0, 0
-    while i < len(lst1) or j < len(lst2):
-        if lst1[i].id > lst2[j].id :
+    while i < len(lst1) and j < len(lst2):
+        if lst1[i].id > lst2[j].id :        # ascending order
             new_lst.append(lst2[j])
             j += 1
         else:
             new_lst.append(lst1[i])
             i += 1
 
-    if i < len(lst1):
+    if i < len(lst1):                       # any remaining elements in list1 or list2.
         new_lst += lst1[i:]
     elif j < len(lst2):
         new_lst += lst2[j:]
@@ -62,6 +71,12 @@ def merge(lst1, lst2):
     return new_lst 
 
 def merge_sort(lst):
+    """
+    Helper function to recursively separate list for further sorting.
+    :complexity
+        Best-case = Worst-case = O(nlogn)
+        :n is the number of elements inside the list.
+    """
     if len(lst) > 1:
         mid = len(lst) // 2
 
@@ -70,6 +85,8 @@ def merge_sort(lst):
         lst2 = merge_sort(lst[:mid])
 
         return merge(lst1, lst2)
+    elif len(lst) == 1:
+        return lst
     else:
         print("There's nothing in the list. ")
         return lst
@@ -100,6 +117,9 @@ def list_teachers():
     """Prints all teachers in the database."""
     # TODO: Implement the logic to list all teachers, similar to list_students().
     print("\n--- Teacher List ---")
+    if not teacher_db:
+        print("No teachers in the system.")
+        return
     for teacher in teacher_db:
         print(f"  ID: {teacher.id}, Name: {teacher.name}, Speciality: {teacher.speciality}")
 
@@ -119,10 +139,10 @@ def find_students(term):
         return None
     # Otherwise, print the details for each student in the results list.
     else:
+        print("\n--- Found Student List ---")
         for student in student_lst:
-            print("\n--- Found Student List ---")
             print(f"  ID: {student.id}, Name: {student.name}, Enrolled in: {student.enrolled_in}")
-            return student_lst
+        return student_lst
 
 def find_teachers(term):
     """Finds teachers by name or speciality."""
@@ -140,9 +160,10 @@ def find_teachers(term):
         print("No match found.")
     # Otherwise, print the details for each teacher from the result list
     else:
+        print("\n--- Found Teacher List ---")
         for teacher in teacher_lst:
-            print("\n--- Found Teacher List ---")
             print(f"  ID: {teacher.id}, Name: {teacher.name}, Speciality: {teacher.speciality}")
+        return teacher_lst
         
 
 # --- Front Desk Functions ---
@@ -183,33 +204,39 @@ def find_id(name: str):
     """
     Helper function to find id via name.
     :complexity
-        Best-case = O(1), Worst-case = O(n),
-        n is the number of students or teachers.
+        Best-case = Worst-case = O(n),
+        :n is the number of students or teachers.
     """
     choice = input("student or teacher? (s/t): ")
     choice = choice[0].lower()
     match choice:
         case "s":
-            for student in student_db:
-                if student.name == name:
-                    return [student.id, "s"] 
+            return [find_students(name), "s"]
         case "t":
-            for teacher in teacher_db:
-                if teacher.name == name:
-                    return [teacher.id, "t"]
+            return [find_teachers(name), "t"]
     return [None, None]
+
+def repeat_element():
+    """
+    Helper function used to deal with when teachers or students share same name. 
+    """
+    res = input("Choose your id: ")
+    return res
 
 def remove_data(term):
     """
     High-level function to remove a student or teacher from the database
     :complexity
         Best-case = Worst-case = O(nlogn),
-        n is the length of the database or list.
+        :n is the length of the database or list.
     Merge sort will have average complexity O(nlogn), while binary search with best case O(1),
     and worst case O(logn), and final list remove function is O(n).
     """
-    result = find_id(term)
-    id = result[0]                                      # find the id from name
+    result = find_id(term)                              # find the id from name
+    try:
+        id = int(repeat_element())                      # dealing with repeat names
+    except ValueError:                                  # if id not found
+        return 
     choice = result[1]
     tempo_lst = []
     match choice:
@@ -228,6 +255,7 @@ def remove_data(term):
                 print(f"Student '{term}' has been removed successfully.")
     else:
         print("No match found.") 
+        return False
 
         
 def front_desk_lookup(term):
@@ -238,6 +266,9 @@ def front_desk_lookup(term):
 
 # --- Transform database into csv file ---
 def database_to_csv(term) -> bool:
+    """
+    High-level function to transform the database into csv file.
+    """
     match term:
         case "s":
             data = [vars(student) for student in student_db]
@@ -262,6 +293,9 @@ def database_to_csv(term) -> bool:
     return False
 
 def database_csv_navigator(term):
+    """
+    Helper function of input validation before enter list to .csv transformation 
+    """
     user_input = term
     while True:
         if user_input.lower() == "s" or user_input.lower() == "t":
@@ -280,8 +314,8 @@ def database_csv_navigator(term):
 def main():
     """Runs the main interactive menu for the receptionist."""
     # Pre-populate some data for easy testing
-    add_teacher("Dr. Keys", "Piano")
-    add_teacher("Ms. Fret", "Guitar")
+    add_teacher("Dr.Keys", "Piano")
+    add_teacher("Ms.Fret", "Guitar")
 
     while True:
         print("\n===== Music School Front Desk =====")
