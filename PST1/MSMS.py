@@ -56,14 +56,14 @@ def merge(lst1, lst2):
 
     i, j = 0, 0
     while i < len(lst1) and j < len(lst2):
-        if lst1[i].id > lst2[j].id :        # ascending order
+        if lst1[i].id > lst2[j].id :                            # ascending order
             new_lst.append(lst2[j])
             j += 1
         else:
             new_lst.append(lst1[i])
             i += 1
 
-    if i < len(lst1):                       # any remaining elements in list1 or list2.
+    if i < len(lst1):                                           # any remaining elements in list1 or list2.
         new_lst += lst1[i:]
     elif j < len(lst2):
         new_lst += lst2[j:]
@@ -151,7 +151,7 @@ def find_teachers(term):
     teacher_lst = []
     # for the term in BOTH the teacher's name AND their speciality.
     for teacher in teacher_db:
-        if teacher.name.casefold() == term.casefold():  # for the term in teacher's name
+        if teacher.name.casefold() == term.casefold():          # for the term in teacher's name
             teacher_lst.append(teacher)
         elif teacher.speciality.casefold() == term.casefold():  # for the term in teacher's speciality
             teacher_lst.append(teacher)
@@ -220,7 +220,7 @@ def repeat_element():
     """
     Helper function used to deal with when teachers or students share same name. 
     """
-    res = input("Choose your id: ")
+    res = input("Choose your id (q for not found): ")
     return res
 
 def remove_data(term):
@@ -232,27 +232,31 @@ def remove_data(term):
     Merge sort will have average complexity O(nlogn), while binary search with best case O(1),
     and worst case O(logn), and final list remove function is O(n).
     """
-    result = find_id(term)                              # find the id from name
+    result = find_id(term)                                      # find the id from name
+    if result[0] == None:                                       # if no match found
+        print("No match found.") 
+        return False
     try:
-        id = int(repeat_element())                      # dealing with repeat names
-    except ValueError:                                  # if id not found
-        return 
+        id = int(repeat_element())                              # dealing with repeat names
+    except ValueError:                                          # if id not found
+        print("No match found.")
+        return False
     choice = result[1]
     tempo_lst = []
     match choice:
         case "s":
-            tempo_lst = merge_sort(student_db)          # sort the database through id 
+            tempo_lst = merge_sort(student_db)                  # sort the database through id 
         case "t":
             tempo_lst = merge_sort(teacher_db)                  
-    index = binary_search(tempo_lst, id)                # find the targeted index
+    index = binary_search(tempo_lst, id)                        # find the targeted index
     if index != None:
-        match choice:                                   # remove element according to database
+        match choice:                                           # remove element according to database
             case "s":
                 student_db.remove(student_db[index])    
                 print(f"Student '{term}' has been removed successfully.")
             case "t":
                 teacher_db.remove(teacher_db[index])
-                print(f"Student '{term}' has been removed successfully.")
+                print(f"Teacher '{term}' has been removed successfully.")
     else:
         print("No match found.") 
         return False
@@ -265,26 +269,26 @@ def front_desk_lookup(term):
     find_teachers(term)
 
 # --- Transform database into csv file ---
-def database_to_csv(term) -> bool:
+def database_to_csv(term: str) -> bool:
     """
     High-level function to transform the database into csv file.
     """
     match term:
-        case "s":
+        case "s":                                               # choose as student 
             data = [vars(student) for student in student_db]
             if data:
                 df = pd.DataFrame(data=data)
-                df.to_csv("Student List.csv", index=False, encoding="utf-8")
+                df.to_csv("Student List.csv", index = True, encoding = "utf-8")
                 print("Student List has already generated successfully.")
                 return True
             else:
                 print("There's currently nothing in the student database.")
                 return False
-        case "t":
+        case "t":                                               # choose as teacher
             data = [vars(teacher) for teacher in teacher_db]
             if data:
                 df = pd.DataFrame(data=data)
-                df.to_csv("Teacher List.csv", index=False, encoding="utf-8")
+                df.to_csv("Teacher List.csv", index = True, encoding = "utf-8")
                 print("Teacher List has already generated successfully.")
                 return True
             else:
@@ -292,7 +296,7 @@ def database_to_csv(term) -> bool:
                 return False
     return False
 
-def database_csv_navigator(term):
+def database_csv_navigator(term: str):
     """
     Helper function of input validation before enter list to .csv transformation 
     """
@@ -306,7 +310,7 @@ def database_csv_navigator(term):
             print("Exiting CSV generation.")
             break
         else:
-            user_input = input("Please enter (s/t) for student or teacher: ")
+            user_input = input("Please enter (s/t) for student or teacher (q for quit): ")
     
 
 
@@ -354,7 +358,7 @@ def main():
         elif choice == '6':
             remove_data(input("Enter the name: "))
         elif choice == 'p':
-            database_csv_navigator(input("student or teacher? (s/t): "))
+            database_csv_navigator(input("Please enter (s/t) for student or teacher (q for quit): "))
         elif choice.lower() == 'q':
             print("Exiting program. Goodbye!")
             break
