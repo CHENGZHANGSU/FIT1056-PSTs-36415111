@@ -185,6 +185,33 @@ def print_student_card(student_id):
     else:
         print(f"Error: Could not print card, student {student_id} not found.")
 
+# --- Transform database into csv file ---
+def database_to_csv() -> bool:
+    """
+    High-level function to transform the database into csv file.
+    """
+    target_key = ['students', 'teachers', 'attendance']
+    output = {}
+    for key in target_key:
+        output += app_data[key]
+
+    df = pd.DataFrame(data=output)
+    try:
+        df.to_csv("Database Overview.csv", index = True, encoding = 'utf-8')
+        return True
+    except:
+        return False
+
+def database_csv_navigator():
+    """
+    Helper function of input validation before enter list to .csv transformation 
+    """
+    # Determine whether the .csv file is generated successfully. 
+    if database_to_csv():
+        print("Database is successfully transformed into .csv file. ")
+    else:
+        print("Errors generated, please review the format of the database and try again. ")
+
 # --- Main Application Loop ---
 def main():
     """Main function to run the MSMS application."""
