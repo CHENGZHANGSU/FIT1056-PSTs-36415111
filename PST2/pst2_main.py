@@ -38,6 +38,36 @@ def save_data(path=DATA_FILE):
         json.dump(app_data, f, indent=4)
     print("Data saved successfully.")
 
+def list_students():
+    """Prints all students in the database."""
+    print("\n--- Student List ---")
+    if not app_data['students']:
+        print("No students in the system.")
+        return
+    # TODO: Loop through student_db. For each student, print their ID, name, and their enrolled_in list.
+    for student in app_data['students']:
+        print(f"  ID: {student['id']}, Name: {student['name']}, Enrolled in: {student['enrolled_in']}")
+
+def list_teachers():
+    """Prints all teachers in the database."""
+    # TODO: Implement the logic to list all teachers, similar to list_students().
+    print("\n--- Teacher List ---")
+    if not app_data['teachers']:
+        print("No teachers in the system.")
+        return
+    for teacher in app_data['teachers']:
+        print(f"  ID: {teacher['id']}, Name: {teacher['name']}, Speciality: {teacher['speciality']}")
+
+def list_navigator(choice : str):
+    match (choice.lower()):
+        case "s":
+            list_students()
+        case "t":
+            list_teachers()
+        case _:
+            print("Unknown status")
+            return None
+
 def get_app_data():
     return app_data
 
@@ -279,6 +309,7 @@ def main():
         print("5. Update Student Info")
         print("6. Remove Student")
         print("7. Remove Teacher")
+        print("8. List Students/Teachers")
         print("p. Print database to .csv")
         print("q. Quit and Save")
         
@@ -329,6 +360,8 @@ def main():
             teacher_id = int(input("Please enter your teacher id: "))
             remove_teacher(teacher_id)
             made_change = True
+        elif choice == '8':
+            list_navigator(input("List for students or teachers (s/t): "))
         elif choice == 'p':
             database_csv_navigator()
         elif choice.lower() == 'q':
