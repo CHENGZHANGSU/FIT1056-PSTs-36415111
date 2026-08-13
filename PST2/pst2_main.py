@@ -38,6 +38,9 @@ def save_data(path=DATA_FILE):
         json.dump(app_data, f, indent=4)
     print("Data saved successfully.")
 
+def get_app_data():
+    return app_data
+
 def print_all():
     print(app_data)
 
@@ -107,6 +110,9 @@ def remove_student(student_id : int):
     """
     Removes a student from the data store.
     """
+    if len(app_data['students']) == 0:
+        print("Remove failed: There is nothing in student database.")
+        return 
     # TODO: Find the student dictionary in app_data['students'] with the matching ID.
     for student in app_data['students']:
     # If found, use the .remove() method on the list to delete it.
@@ -114,7 +120,7 @@ def remove_student(student_id : int):
             print(f"Student {student['name']} is removed. ")
             app_data['students'].remove(student)
             return
-    print("Remove failed.")
+    print("Remove failed: Student not found.")
     # A list comprehension is a clean way to do this:
     # app_data['students'] = [s for s in app_data['students'] if s['id'] != student_id]
     
@@ -123,12 +129,15 @@ def remove_teacher(teacher_id : int):
     """
     Removes a student from the data store.
     """
+    if len(app_data['teachers']) == 0:
+        print("Remove failed: There is nothing in teacher database.")
+        return 
     for teacher in app_data['teachers']:
         if teacher['id'] == teacher_id:
             print(f"Teacher {teacher['name']} is removed. ")
             app_data['teachers'].remove(teacher)
             return
-    print("Remove failed. ")
+    print("Remove failed: Teacher not found")
 
 def update_student(student_id, **fields):
     """
@@ -140,6 +149,49 @@ def update_student(student_id, **fields):
             print(f"Student {student_id} updated.")
             return
     print(f"Error: Teacher with ID {student_id} not found.")
+
+def find_students(term):
+    """Finds students by name."""
+    print(f"\n--- Finding Students matching '{term}' ---")
+    # TODO: Create an empty list to store results.
+    student_lst = []
+    # Loop through student_db. If the search 'term' (case-insensitive) is in the student's name,
+    for student in app_data['students']:
+        if student['name'].casefold() == term.casefold(): 
+    # add them to your results list.
+            student_lst.append(student)
+    # After the loop, if the results list is empty, print "No match found."
+    if not student_lst:
+        print("No match found.")
+        return False
+    # Otherwise, print the details for each student in the results list.
+    else:
+        print("\n--- Found Student List ---")
+        for student in student_lst:
+            print(f"  ID: {student['id']}, Name: {student['name']}, Enrolled in: {student['enrolled_in']}")
+        return True
+
+def find_teachers(term):
+    """Finds teachers by name or speciality."""
+    print(f"\n--- Finding Teachers matching '{term}' ---")
+    # TODO: Implement this function similar to find_students, but check
+    teacher_lst = []
+    # for the term in BOTH the teacher's name AND their speciality.
+    for teacher in app_data['teachers']:
+        if teacher['name'].casefold() == term.casefold():          # for the term in teacher's name
+            teacher_lst.append(teacher)
+        elif teacher['speciality'].casefold() == term.casefold():  # for the term in teacher's speciality
+            teacher_lst.append(teacher)
+    # After loop, no result found
+    if not teacher_lst:
+        print("No match found.")
+        return False
+    # Otherwise, print the details for each teacher from the result list
+    else:
+        print("\n--- Found Teacher List ---")
+        for teacher in teacher_lst:
+            print(f"  ID: {teacher['id']}, Name: {teacher['name']}, Speciality: {teacher['speciality']}")
+        return True
     
 
 # --- New Receptionist Features ---
@@ -224,8 +276,9 @@ def main():
         print("2. Check-in Student")
         print("3. Print Student Card")
         print("4. Update Teacher Info")
-        print("5. Remove Student")
-        print("6. Remove Teacher")
+        print("5. Update Student Info")
+        print("6. Remove Student")
+        print("7. Remove Teacher")
         print("p. Print database to .csv")
         print("q. Quit and Save")
         
@@ -253,16 +306,25 @@ def main():
         elif choice == '4':
             # TODO: Get teacher_id and new details, then call update_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
-            speciality = input("Please enter your speciality")
+            name = input("Please enter your name: ")
+            speciality = input("Please enter your speciality: ")
             # Example: update_teacher(1, speciality="Advanced Piano")
-            update_student(teacher_id, speciality = speciality)
+            update_teacher(teacher_id, name = name, speciality = speciality)
             made_change = True
         elif choice == '5':
+            # TODO: Get teacher_id and new details, then call update_teacher().
+            student_id = int(input("Please enter your student id: "))
+            name = input("Please enter your name: ")
+            enrollment = input("Please enter your new enrollment: ")
+            # Example: update_teacher(1, speciality="Advanced Piano")
+            update_student(student_id, name = name, enrollment = [f"{enrollment}"])
+            made_change = True
+        elif choice == '6':
             # TODO: Get student_id, then call remove_student().
             student_id = int(input("Please enter your student id: "))
             remove_student(student_id)
             made_change = True
-        elif choice == '6':
+        elif choice == '7':
             # TODO: Get teacher_id, then call remove_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
             remove_teacher(teacher_id)
