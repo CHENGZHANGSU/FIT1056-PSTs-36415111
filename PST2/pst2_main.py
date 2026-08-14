@@ -3,9 +3,11 @@
 import json
 import datetime
 import pandas as pd
+from algorithm import *
 
-DATA_FILE = "msms.json"
+DATA_FILE = "PST2/msms.json"
 app_data = {} # This global dictionary will hold ALL our data.
+
 
 # --- Core Persistence Engine ---
 def load_data(path=DATA_FILE):
@@ -36,7 +38,7 @@ def save_data(path=DATA_FILE):
     # Use the 'indent=4' argument in json.dump() to make the file readable.
     with open(path, 'w') as f:
         json.dump(app_data, f, indent=4)
-    print("Data saved successfully.")
+    print("Data saved successfully.\n")
 
 def list_students():
     """Prints all students in the database."""
@@ -253,7 +255,7 @@ def print_student_card(student_id):
     
     if student_to_print:
         # TODO: Create a filename, e.g., f"{student_id}_card.txt".
-        filename = f"{student_id}_card.txt"
+        filename = f"PST2/{student_id}_card.txt"
         # TODO: Open the file in write mode ('w').
         with open(filename, 'w') as f:
             # Write the student's details to the file in a nice format.
@@ -267,22 +269,81 @@ def print_student_card(student_id):
     else:
         print(f"Error: Could not print card, student {student_id} not found.")
 
+def obey_order(order = "ascending"):
+    """
+    Sort the database of each list in dict according to user need. 
+    """
+    key = ['students', 'teachers', 'attendance']
+    for k in key:
+        if len(app_data[k]) != 0:
+            if order.casefold() in "ascending":
+                app_data[k] = merge_sort(app_data[k])
+                print(f"{k.capitalize()} database is sorted in ascending order.\n")
+            else:
+                app_data[k] = merge_sort(app_data[k], "descending")
+                print(f"{k.capitalize()} database is sorted in descending order.\n")
+
 # --- Transform database into csv file ---
 def database_to_csv() -> bool:
     """
     High-level function to transform the database into csv file.
     """
-    target_key = ['students', 'teachers', 'attendance']
-    output = {}
-    for key in target_key:
-        output += app_data[key]
+    obey_order(input("Which order the data should be arranged? (asc/des): "))
+    choice = input("Which data should be transformed into .csv file? (s/t/a/all): ")
 
-    df = pd.DataFrame(data=output)
-    try:
-        df.to_csv("Database Overview.csv", index = True, encoding = 'utf-8')
-        return True
-    except:
-        return False
+    target_key = ['students', 'teachers', 'attendance']
+    match (choice.lower()):                                         # match various options
+        case "s":
+            df = pd.DataFrame(data = app_data['students'])
+            try:
+                if len(app_data['students']) != 0:
+                    print("There is nothing inside student database")
+                df.to_csv("PST2/Students.csv", index = True, encoding = 'utf-8')
+                print("File generated.\n")
+                return True
+            except:
+                print("Error, please check the database and try again.\n")
+                return False  
+        case "t":
+                df = pd.DataFrame(data = app_data['teachers'])
+                try:
+                    if len(app_data['teachers']) != 0:
+                        print("There is nothing inside teacher database")
+                    df.to_csv("PST2/Teachers.csv", index = True, encoding = 'utf-8')
+                    print("File generated.\n")
+                    return True
+                except:
+                    print("Error, please check the database and try again.\n")
+                    return False
+        case "a":
+                df = pd.DataFrame(data = app_data['attendance'])
+                try:
+                    if len(app_data['attendance']) != 0:
+                        print("There is nothing inside attendance database")
+                    df.to_csv("PST2/Attendance.csv", index = True, encoding = 'utf-8')
+                    print("File generated.\n")
+                    return True
+                except:
+                    print("Error, please check the database and try again.\n")
+                    return False
+        case "all":
+                data = []
+                for key in target_key:
+                    for value in app_data[key]:
+                        data.append(value)
+
+                df = pd.DataFrame(data = data)
+                try:
+                    df.to_csv("PST2/Database Overview.csv", index = True, encoding = 'utf-8')
+                    print("File generated.\n")
+                    return True
+                except:
+                    print("Error, please check the database and try again.\n")
+                    return False
+        case _:
+            print("Unknown status")
+            return False
+
 
 def database_csv_navigator():
     """
@@ -318,22 +379,27 @@ def main():
         made_change = False # A flag to track if we need to save
         if choice == '0':
             print_all()
+
         elif choice == '1':
             # TODO: Prompt for student name and instrument, then call front_desk_register.
             name = input("Enter student name: ")
             instrument = input("Enter instrument to enrol in: ")
             front_desk_register(name, instrument)
             made_change = True
+
         elif choice == '2':
             # TODO: Get student_id and course_id from user, then call check_in().
             student_id = int(input("Please enter your student id: "))
             course_id = input("Please enter your course_id: ")
             check_in(student_id, course_id)
+            made_change = True
+
         elif choice == '3':
             # TODO: Get student_id, then call print_student_card().
             student_id = int(input("Please enter your student id: "))
             print_student_card(student_id)
             pass # No change made, so no save needed
+
         elif choice == '4':
             # TODO: Get teacher_id and new details, then call update_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
@@ -342,6 +408,7 @@ def main():
             # Example: update_teacher(1, speciality="Advanced Piano")
             update_teacher(teacher_id, name = name, speciality = speciality)
             made_change = True
+
         elif choice == '5':
             # TODO: Get teacher_id and new details, then call update_teacher().
             student_id = int(input("Please enter your student id: "))
@@ -350,23 +417,29 @@ def main():
             # Example: update_teacher(1, speciality="Advanced Piano")
             update_student(student_id, name = name, enrollment = [f"{enrollment}"])
             made_change = True
+
         elif choice == '6':
             # TODO: Get student_id, then call remove_student().
             student_id = int(input("Please enter your student id: "))
             remove_student(student_id)
             made_change = True
+
         elif choice == '7':
             # TODO: Get teacher_id, then call remove_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
             remove_teacher(teacher_id)
             made_change = True
+
         elif choice == '8':
             list_navigator(input("List for students or teachers (s/t): "))
+
         elif choice == 'p':
             database_csv_navigator()
+
         elif choice.lower() == 'q':
-            print("Saving final changes and exiting.")
+            print("\nSaving final changes and exiting.")
             break
+
         else:
             print("Invalid choice.")
             
