@@ -1,0 +1,21 @@
+{
+    "students": [
+        {
+            "id": 1,
+            "name": "Adam",
+            "enrolled_in": [
+                "piano"
+            ]
+        }
+    ],
+    "teachers": [],
+    "attendance": [
+        {
+            "student_id": 1,
+            "course_id": "FIT1056",
+            "timestamp": "2026-08-14T17:10:44.570233"
+        }
+    ],
+    "next_student_id": 2,
+    "next_teacher_id": 1
+}
