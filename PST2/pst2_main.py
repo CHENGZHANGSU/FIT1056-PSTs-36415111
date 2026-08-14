@@ -28,7 +28,11 @@ def load_data(path=DATA_FILE):
             "teachers": [],
             "attendance": [],
             "next_student_id": 1,
-            "next_teacher_id": 1
+            "next_teacher_id": 1,
+            "unused_id": {
+                "ui_student": [],
+                "ui_teacher": []
+            }
         }
 
 def save_data(path=DATA_FILE):
@@ -76,6 +80,17 @@ def get_app_data():
 def print_all():
     print(app_data)
 
+def collect_unused_id(id: int, category: str):
+    """
+    Helper function to collect the removed id. 
+    """
+    match (category.casefold()):
+        case "student":
+            app_data['unused_id']['ui_student'].append(id)
+        case "teacher":
+            app_data['unused_id']['ui_teacher'].append(id)
+        case _:
+            print("Something wrong with id recycling.\n")
 
 # --- Full CRUD for Core Data ---
 # Note: We are now working with lists of dictionaries, not lists of objects.
@@ -149,6 +164,7 @@ def remove_student(student_id : int):
     for student in app_data['students']:
     # If found, use the .remove() method on the list to delete it.
         if student['id'] == student_id:
+            collect_unused_id(student_id, "student")
             print(f"Student {student['name']} is removed. ")
             app_data['students'].remove(student)
             return
@@ -166,6 +182,7 @@ def remove_teacher(teacher_id : int):
         return 
     for teacher in app_data['teachers']:
         if teacher['id'] == teacher_id:
+            collect_unused_id(teacher_id, "teacher")
             print(f"Teacher {teacher['name']} is removed. ")
             app_data['teachers'].remove(teacher)
             return
@@ -364,13 +381,14 @@ def main():
         print("\n===== MSMS v2 (Persistent) =====")
         print("0. Check")
         print("1. Add Student")
-        print("2. Check-in Student")
-        print("3. Print Student Card")
-        print("4. Update Teacher Info")
-        print("5. Update Student Info")
-        print("6. Remove Student")
-        print("7. Remove Teacher")
-        print("8. List Students/Teachers")
+        print("2. Add Teacher")
+        print("3. Check-in Student")
+        print("4. Print Student Card")
+        print("5. Update Teacher Info")
+        print("6. Update Student Info")
+        print("7. Remove Student")
+        print("8. Remove Teacher")
+        print("9. List Students/Teachers")
         print("p. Print database to .csv")
         print("q. Quit and Save")
         
@@ -388,19 +406,26 @@ def main():
             made_change = True
 
         elif choice == '2':
+            # TODO: Prompt for student name and instrument, then call front_desk_register.
+            name = input("Enter teacher name: ")
+            speciality = input("Enter your speciality: ")
+            add_teacher(name, speciality)
+            made_change = True
+
+        elif choice == '3':
             # TODO: Get student_id and course_id from user, then call check_in().
             student_id = int(input("Please enter your student id: "))
             course_id = input("Please enter your course_id: ")
             check_in(student_id, course_id)
             made_change = True
 
-        elif choice == '3':
+        elif choice == '4':
             # TODO: Get student_id, then call print_student_card().
             student_id = int(input("Please enter your student id: "))
             print_student_card(student_id)
             pass # No change made, so no save needed
 
-        elif choice == '4':
+        elif choice == '5':
             # TODO: Get teacher_id and new details, then call update_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
             name = input("Please enter your name: ")
@@ -409,28 +434,27 @@ def main():
             update_teacher(teacher_id, name = name, speciality = speciality)
             made_change = True
 
-        elif choice == '5':
+        elif choice == '6':
             # TODO: Get teacher_id and new details, then call update_teacher().
             student_id = int(input("Please enter your student id: "))
             name = input("Please enter your name: ")
             enrollment = input("Please enter your new enrollment: ")
-            # Example: update_teacher(1, speciality="Advanced Piano")
-            update_student(student_id, name = name, enrollment = [f"{enrollment}"])
+            update_student(student_id, name = name, enrolled_in = [f"{enrollment}"])
             made_change = True
 
-        elif choice == '6':
+        elif choice == '7':
             # TODO: Get student_id, then call remove_student().
             student_id = int(input("Please enter your student id: "))
             remove_student(student_id)
             made_change = True
 
-        elif choice == '7':
+        elif choice == '8':
             # TODO: Get teacher_id, then call remove_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
             remove_teacher(teacher_id)
             made_change = True
 
-        elif choice == '8':
+        elif choice == '9':
             list_navigator(input("List for students or teachers (s/t): "))
 
         elif choice == 'p':
