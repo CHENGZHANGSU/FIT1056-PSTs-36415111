@@ -188,6 +188,18 @@ def remove_teacher(teacher_id : int):
             return
     print("Remove failed: Teacher not found")
 
+def update_student_navigator(student_id: int, name: str):
+    choice = input("Do you want to add or update the enrollment? (add/update): ")
+    enrollment = input("Please enter the new enrollment: ")
+    enroll = find_student_by_id(student_id)
+    if enroll != None:
+        enroll_lst = enroll['enrolled_in']
+        if choice.lower() in "add":
+            enroll_lst.append(enrollment)
+            update_student(student_id, name = name, enrolled_in = enroll_lst)
+        elif choice.lower() in "update":
+            update_student(student_id, name = name, enrolled_in = [f"{enrollment}"])
+
 def update_student(student_id, **fields):
     """
     Finds a student by ID and updates their data with provided fields.
@@ -384,8 +396,8 @@ def main():
         print("2. Add Teacher")
         print("3. Check-in Student")
         print("4. Print Student Card")
-        print("5. Update Teacher Info")
-        print("6. Update Student Info")
+        print("5. Update Student Info")
+        print("6. Update Teacher Info")
         print("7. Remove Student")
         print("8. Remove Teacher")
         print("9. List Students/Teachers")
@@ -426,20 +438,19 @@ def main():
             pass # No change made, so no save needed
 
         elif choice == '5':
+            # TODO: Get student and new details, then call update_student_navigator().
+            student_id = int(input("Please enter your student id: "))
+            name = input("Please enter your name: ")
+            update_student_navigator(student_id, name)
+            made_change = True
+
+        elif choice == '6':
             # TODO: Get teacher_id and new details, then call update_teacher().
             teacher_id = int(input("Please enter your teacher id: "))
             name = input("Please enter your name: ")
             speciality = input("Please enter your speciality: ")
             # Example: update_teacher(1, speciality="Advanced Piano")
             update_teacher(teacher_id, name = name, speciality = speciality)
-            made_change = True
-
-        elif choice == '6':
-            # TODO: Get teacher_id and new details, then call update_teacher().
-            student_id = int(input("Please enter your student id: "))
-            name = input("Please enter your name: ")
-            enrollment = input("Please enter your new enrollment: ")
-            update_student(student_id, name = name, enrolled_in = [f"{enrollment}"])
             made_change = True
 
         elif choice == '7':
