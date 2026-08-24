@@ -8,6 +8,17 @@ class TeacherUser(User):
         super().__init__(user_id, name)
         self.speciality = speciality
 
+    """Accessor"""
+    def get_teacher_id(self) -> int:
+        return super().get_id()
+
+    def get_teacher_name(self) -> str:
+        return super().get_name()
+
+    def get_teacher_speciality(self) -> str:
+        return self.speciality
+    
+
 class Course:
     """Represents a single course offered by the school, linked to a teacher."""
     def __init__(self, course_id, name, instrument, teacher_id):
