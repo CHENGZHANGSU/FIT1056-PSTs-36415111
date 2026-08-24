@@ -5,7 +5,7 @@ from app.teacher import TeacherUser, Course
 
 class ScheduleManager:
     """The main controller for all business logic and data handling."""
-    def __init__(self, data_path="data/msms.json"):
+    def __init__(self, data_path="PST3/data/msms.json"):
         self.data_path = data_path
         self.students = []
         self.teachers = []
@@ -14,6 +14,8 @@ class ScheduleManager:
         self.attendance_log = []
         # ... (next_id counters) ...
         self._load_data()
+        # ID controller
+        self.id = {}
 
     def _load_data(self):
         """Loads data from the JSON file and populates the object lists."""
@@ -28,6 +30,7 @@ class ScheduleManager:
                 # TODO: Correctly load the attendance log.
                 # Use .get() with a default empty list to prevent errors if the key doesn't exist.
                 self.attendance_log = data.get("attendance", [])
+                self.id = data.get("id_counters", {})
         except FileNotFoundError:
             print("Data file not found. Starting with a clean state.")
     
@@ -42,10 +45,15 @@ class ScheduleManager:
             # Since it's already a list of dicts, no conversion is needed.
             "attendance": self.attendance_log,
             # ... (next_id counters) ...
+            "id_counters": self.id
         }
         # TODO: Write 'data_to_save' to the JSON file.
         with open(self.data_path, 'w') as f:
             json.dump(data_to_save, f, indent=4)
+
+    def _refresh(self):
+        self._save_data()
+        self._load_data()
 
 
     def check_in(self, student_id, course_id):
@@ -77,7 +85,7 @@ class ScheduleManager:
                 return student
         # TODO: If the loop finishes without finding a match, return None.
         return None
-
+    
         
     def find_course_by_id(self, course_id):
         """A new helper to find courses by their exact ID."""
@@ -87,3 +95,31 @@ class ScheduleManager:
                 return course
         # TODO: If the loop finishes without finding a match, return None.
         return None
+
+    def get_course_list(self):
+        return self.courses
+
+    def list_students(self):
+        """Prints all students in the database."""
+        print("\n--- Student List ---")
+        if not self.students:
+            print("No students in the system.")
+            return
+        # TODO: Loop through student_db. For each student, print their ID, name, and their enrolled_in list.
+        for student in self.students:
+            print(f"  ID: {student.get_student_id()}, Name: {student.get_student_name()}, Enrolled in: {student.get_enrolled_course_ids()}")
+
+    def list_teachers(self):
+        """Prints all teachers in the database."""
+        # TODO: Implement the logic to list all teachers, similar to list_students().
+        print("\n--- Teacher List ---")
+        if not self.teachers:
+            print("No teachers in the system.")
+            return
+        for teacher in self.teachers:
+            print(f"  ID: {teacher.get_teacher_id()}, Name: {teacher.get_teacher_name()}, Speciality: {teacher.get_teacher_speciality()}")
+
+    def list_attendance(self):
+        """Prints all attendance records in the database"""
+        pass
+
