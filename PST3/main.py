@@ -10,36 +10,56 @@ def front_desk_daily_roster(manager, day):
     for course in manager.get_course_list():
         course_exist = False
         print("\n##################################################################")
-        print(f"Lessons {course['id']} {course['name']} for {course['instrument']}")
-        for lesson in course['lessons']:
+        print(f"Lessons {course.get_course_id()} {course.get_course_name()} for {course.get_course_instrument()}")
+        for lesson in course.get_lessons():
             if lesson['day'].casefold() == day.casefold():
                 course_exist = True
-                print(f"Lesson id {lesson['id']} on {day}, start at {lesson['start_time']} in {lesson['room']}")
+                print(f"Lesson id {lesson['lesson_id']} on {day}, start at {lesson['start_time']} in {lesson['room']}")
         if not course_exist:
-            print(f"No lesson for {course['name']} on {day}\n")
+            print(f"No lesson for {course.get_course_name()} on {day}\n")
 
 
+def list_user_navigator(manager, type="s"):
+    print("----- Accessing to the database -----")
+    match type.lower() or type[0].lower():
+        case "s":
+            manager.list_students()
+        case "t":
+            manager.list_teachers()
+        case "a":
+            password = int(input("Enter the password to view attendance: "))
+            if password == password:
+                manager.list_attendance()
+        case _:
+            print("Invalid Syntax.\n")
 
-def switch_course(manager, student_id, from_course_id, to_course_id):
-    # TODO: Implement the logic to switch a student by calling methods on the manager.
-    print(f"\n--- Switch Course for {student_id} ---")
-    # find the student first
-    student = manager.find_student_by_id(student_id)
-    if student == None or from_course_id not in student.get_enrolled_course_ids():
-        print(f"Student {student_id} not found, please check and try again later.")
-    else:
-        from_course = manager.find_course_by_id(from_course_id)
-        to_course = manager.find_course_by_id(to_course_id)
-        if from_course == None:
-            print(f"Original Course {from_course_id} not found, please check and try again later.")
-        elif to_course == None:
-            print(f"Targeted Course {to_course_id} not found, please check and try again later.")
-        else:
-            for i, course_id in enumerate(student.get_enrolled_course_ids()):
-               if  int(course_id) == int(from_course_id):
-                   student.get_enrolled_course_ids()[i] = int(to_course_id)
-                   print(f"Course switch successfully from {from_course_id} to {to_course_id}.\n")
-                   break
+def add_user_navigator(manager, type="s"):
+    print("----- Adding user to the database -----")
+    match type.lower() or type[0].lower():
+        case "s":
+            name = input("Enter the student's name: ")
+            course_id = int(input("Enter the course ID to enrol the student in: "))
+            manager.front_desk_register(name, course_id)
+        case "t":
+            name = input("Enter the teacher's name: ")
+            speciality = input("Enter the teacher's speciality: ")
+            manager.add_teacher(name, speciality)
+        case _:
+            print("Invalid Syntax.\n")
+
+def enrollment_navigator(manager):
+    print("\n----- Enrolling events to users -----")
+    print("1. Enroll new course as a student")
+    print("2. Enroll new teacher in the course")
+    choice = int(input("Please enter your choice: "))
+    match choice:
+        case 1:
+            manager.front_desk_enrol(int(input("Please enter your student id: ")), int(input("Please enter the course id: ")))
+        case 2:
+            pass
+        case _:
+            print("Invalid Syntax.")
+            return 
 
 def main():
     """Main function to run the MSMS application."""
@@ -49,13 +69,50 @@ def main():
         print("\n===== MSMS v3 (Object-Oriented) =====")
         # TODO: Create a menu for the new PST3 functions.
         print("1. View Daily Roster")
+        print("2. List User")
+        print("3. Add User")
+        print("4. Enrollment")
+        print("5. Update User")
+        print("6. Remove User")
+        print("7. Print student-card")
+        print("p. Print to .csv")
+        print("q. Save and Quit")
         # Get user input and call the appropriate view function, passing 'manager' to it.
         choice = input("Enter choice: ")
         if choice == '1':
             day = input("Enter day (e.g., Monday): ")
             front_desk_daily_roster(manager, day)
+
+        elif choice == '2':
+            res = input("Access student, teacher or attendance? (s/t/a): ")
+            list_user_navigator(manager, res)
+
+        elif choice == '3':
+            res = input("Add student or teacher? (s/t): ")
+            add_user_navigator(manager, res)
+
+        elif choice == '4':
+            enrollment_navigator(manager)
+
+        elif choice == '5':
+            pass
+
+        elif choice == '6':
+            pass
+
+        elif choice == '7':
+            pass
+
+        elif choice.lower() == 'p':
+            pass
+
         elif choice.lower() == 'q':
+            manager.save_all()
+            print("\nSaving final changes and exiting.")
             break
+        
+        else:
+            print("Invalid choice.")
         
 if __name__ == "__main__":
     main()
