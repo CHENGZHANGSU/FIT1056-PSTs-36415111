@@ -12,8 +12,12 @@ class StudentUser(User):
     def get_enrolled_course_ids(self):
         return self.enrolled_course_ids
 
-    def get_student_id(self) -> int:
-        return super().get_id()
+    """Mutator"""
+    def enroll_course_ids(self, new_course_id: int):
+        try:
+            self.enrolled_course_ids.append(new_course_id)
+        except:
+            print("Error occur, please try again")
 
-    def get_student_name(self) -> str:
-        return super().get_name()
+    def set_enrolled_course_ids(self, new_course_ids: list):
+        self.enrolled_course_ids = new_course_ids
