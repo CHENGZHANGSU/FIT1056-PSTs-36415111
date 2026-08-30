@@ -13,9 +13,8 @@ class ScheduleManager:
         # TODO: Initialize the new attendance_log attribute as an empty list.
         self.attendance_log = []
         # ... (next_id counters) ...
-        self._load_data()
-        # ID controller
         self.id = {}
+        self._load_data()
 
     def _load_data(self):
         """Loads data from the JSON file and populates the object lists."""
@@ -31,6 +30,7 @@ class ScheduleManager:
                 # Use .get() with a default empty list to prevent errors if the key doesn't exist.
                 self.attendance_log = data.get("attendance", [])
                 self.id = data.get("id_counters", {})
+                
         except FileNotFoundError:
             print("Data file not found. Starting with a clean state.")
     
@@ -81,7 +81,7 @@ class ScheduleManager:
         """A new helper to find one student by their exact ID."""
         # TODO: Loop through student list. If a student's ID matches student_id, return the student object.
         for student in self.students:
-            if student['id'] == student_id:
+            if student.get_id() == student_id:
                 return student
         # TODO: If the loop finishes without finding a match, return None.
         return None
@@ -107,7 +107,7 @@ class ScheduleManager:
             return
         # TODO: Loop through student_db. For each student, print their ID, name, and their enrolled_in list.
         for student in self.students:
-            print(f"  ID: {student.get_student_id()}, Name: {student.get_student_name()}, Enrolled in: {student.get_enrolled_course_ids()}")
+            print(f"  ID: {student['id']}, Name: {student['name']}, Enrolled in: {student['enrolled_course_ids']}")
 
     def list_teachers(self):
         """Prints all teachers in the database."""
@@ -117,9 +117,51 @@ class ScheduleManager:
             print("No teachers in the system.")
             return
         for teacher in self.teachers:
-            print(f"  ID: {teacher.get_teacher_id()}, Name: {teacher.get_teacher_name()}, Speciality: {teacher.get_teacher_speciality()}")
+            print(f"  ID: {teacher['id']}, Name: {teacher['name']}, Speciality: {teacher['speciality']}")
 
     def list_attendance(self):
         """Prints all attendance records in the database"""
         pass
+
+    def front_desk_register(self, name, course_id):
+        """High-level function to register a new student and enrol them."""
+        student_id = self.id['next_student_id']
+        # TODO: Create a new Student object, add it to student_db, and increment the ID.
+        new_student = StudentUser(student_id, name)
+        self.students.append(new_student)
+        self.id['next_student_id'] += 1
+        
+        # TODO: Immediately call front_desk_enrol() using the new student's ID and the provided instrument.
+        self.front_desk_enrol(new_student.get_id(), course_id)
+        print(f"Front Desk: Successfully registered '{name}' and enrolled in '{course_id}'.")
+
+    def front_desk_enrol(self, student_id, course_id):
+        """High-level function to enrol an existing student in a course."""
+        # TODO: Use your new find_student_by_id() helper.
+        student = self.find_student_by_id(student_id)
+        # TODO: If the student is found, append the course to their 'enrolled_in' list.
+        if student:
+            if course_id in self.courses:
+                student.enroll_course_ids(course_id)
+                new_student = StudentUser(student['id'], student['name'])
+                new_student.enroll_course_ids(course_id)
+                print(f"Front Desk: Enrolled student {student_id} in '{course_id}'.")
+        elif isinstance(student, StudentUser):
+            student.enroll_course_ids(course_id)
+            print(f"Front Desk: Enrolled student {student_id} in '{course_id}'.")
+        else:
+            # TODO: If the student is not found, print an error message like "Error: Student ID not found."
+            print(f"Error: Student ID {student_id} not found.")
+
+    def add_teacher(self, name, speciality):
+        """Adds a teacher dictionary to the data storage."""
+        # TODO: Get the next teacher ID from app_data['next_teacher_id'].
+        teacher_id = self.id['next_teacher_id']
+        # TODO: Create a new teacher dictionary with 'id', 'name', and 'speciality' keys.
+        new_teacher = TeacherUser(teacher_id, name, speciality)
+        # TODO: Append the new dictionary to the app_data['teachers'] list.
+        self.teachers.append(new_teacher)
+        # TODO: Increment the 'next_teacher_id' in app_data.
+        self.id['next_teacher_id'] += 1
+        print(f"Core: Teacher '{name}' added.")
 
