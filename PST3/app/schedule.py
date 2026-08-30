@@ -55,6 +55,23 @@ class ScheduleManager:
         self._save_data()
         self._load_data()
 
+    def _to_object(self, lst_student, lst_teacher, lst_course):
+        """Converts dictionaries back to their respective object types."""
+        for student in lst_student:
+            new_student = StudentUser(student['id'], student['name'])
+            if len(student['enrolled_course_ids']) != 0:
+                new_student.set_enrolled_course_ids(student['enrolled_course_ids'])
+            student = new_student
+
+        for teacher in lst_teacher:
+            new_teacher = TeacherUser(teacher['user_id'], teacher['name'], teacher['speciality'])
+            teacher = new_teacher
+
+        for course in lst_course:
+            new_course = Course(course['id'], course['name'], course['instrument'], course['teacher_id'])
+            if len(course['lessons']) != 0:
+                new_course.set_list_lessons(course['lessons'])
+            course = new_course
 
     def check_in(self, student_id, course_id):
         """Records a student's attendance for a course after validation."""
