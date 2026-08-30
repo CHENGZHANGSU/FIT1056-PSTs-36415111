@@ -5,7 +5,7 @@ from app.teacher import TeacherUser, Course
 
 class ScheduleManager:
     """The main controller for all business logic and data handling."""
-    def __init__(self, data_path="PST3/data/msms.json"):
+    def __init__(self, data_path="data/msms.json"):
         self.data_path = data_path
         self.students = []
         self.teachers = []
@@ -15,6 +15,7 @@ class ScheduleManager:
         # ... (next_id counters) ...
         self.id = {}
         self._load_data()
+        self._to_object()
 
     def _load_data(self):
         """Loads data from the JSON file and populates the object lists."""
@@ -51,27 +52,29 @@ class ScheduleManager:
         with open(self.data_path, 'w') as f:
             json.dump(data_to_save, f, indent=4)
 
-    def _refresh(self):
+    def save_all(self):
         self._save_data()
-        self._load_data()
 
-    def _to_object(self, lst_student, lst_teacher, lst_course):
+    def _to_object(self):
         """Converts dictionaries back to their respective object types."""
-        for student in lst_student:
+        for i in range(len(self.students)):
+            student = self.students[i]
             new_student = StudentUser(student['id'], student['name'])
             if len(student['enrolled_course_ids']) != 0:
                 new_student.set_enrolled_course_ids(student['enrolled_course_ids'])
-            student = new_student
+            self.students[i] = new_student
 
-        for teacher in lst_teacher:
+        for i in range(len(self.teachers)):
+            teacher = self.teachers[i]
             new_teacher = TeacherUser(teacher['user_id'], teacher['name'], teacher['speciality'])
-            teacher = new_teacher
+            self.teachers[i] = new_teacher
 
-        for course in lst_course:
+        for i in range(len(self.courses)):
+            course = self.courses[i]
             new_course = Course(course['id'], course['name'], course['instrument'], course['teacher_id'])
             if len(course['lessons']) != 0:
                 new_course.set_list_lessons(course['lessons'])
-            course = new_course
+            self.courses[i] = new_course
 
     def check_in(self, student_id, course_id):
         """Records a student's attendance for a course after validation."""
@@ -89,7 +92,7 @@ class ScheduleManager:
         # This line will now work without causing an AttributeError.
         self.attendance_log.append(check_in_record)
         self._save_data() # This will now correctly save the attendance log.
-        print(f"Success: Student {student.name} checked into {course.name}.")
+        print(f"Success: Student {student.get_name()} checked into {course.get_course_name()}.")
         return True
 
     # TODO: Also implement find_student_by_id and find_course_by_id helper methods.
@@ -104,11 +107,13 @@ class ScheduleManager:
         return None
     
         
-    def find_course_by_id(self, course_id):
+    def find_course_by_id(self, course_id, enrolled_student_id:int=0):
         """A new helper to find courses by their exact ID."""
         # TODO: Loop through course lists. If a student's ID matches student_id, return the course object.
         for course in self.courses:
-            if course['id'] == course_id:
+            if course.get_course_id() == course_id:
+                if enrolled_student_id != 0:
+                    course.enroll_student_in_course(enrolled_student_id)
                 return course
         # TODO: If the loop finishes without finding a match, return None.
         return None
@@ -124,7 +129,7 @@ class ScheduleManager:
             return
         # TODO: Loop through student_db. For each student, print their ID, name, and their enrolled_in list.
         for student in self.students:
-            print(f"  ID: {student['id']}, Name: {student['name']}, Enrolled in: {student['enrolled_course_ids']}")
+            print(f"  ID: {student.get_id()}, Name: {student.get_name()}, Enrolled in: {student.get_enrolled_course_ids()}")
 
     def list_teachers(self):
         """Prints all teachers in the database."""
@@ -134,7 +139,7 @@ class ScheduleManager:
             print("No teachers in the system.")
             return
         for teacher in self.teachers:
-            print(f"  ID: {teacher['id']}, Name: {teacher['name']}, Speciality: {teacher['speciality']}")
+            print(f"  ID: {teacher.get_teacher_id()}, Name: {teacher.get_teacher_name()}, Speciality: {teacher.get_teacher_speciality()}")
 
     def list_attendance(self):
         """Prints all attendance records in the database"""
@@ -158,14 +163,14 @@ class ScheduleManager:
         student = self.find_student_by_id(student_id)
         # TODO: If the student is found, append the course to their 'enrolled_in' list.
         if student:
-            if course_id in self.courses:
-                student.enroll_course_ids(course_id)
-                new_student = StudentUser(student['id'], student['name'])
-                new_student.enroll_course_ids(course_id)
+            course = self.find_course_by_id(course_id)
+            # If course is valid
+            if course:
+                self.find_course_by_id(course_id, student_id)   # Enroll student id into course object
+                student.enroll_course_ids(course_id)            # Enroll course id into student object
                 print(f"Front Desk: Enrolled student {student_id} in '{course_id}'.")
-        elif isinstance(student, StudentUser):
-            student.enroll_course_ids(course_id)
-            print(f"Front Desk: Enrolled student {student_id} in '{course_id}'.")
+            else:
+                print(f"Front Desk: Course id {course_id} not found.")
         else:
             # TODO: If the student is not found, print an error message like "Error: Student ID not found."
             print(f"Error: Student ID {student_id} not found.")
@@ -181,4 +186,5 @@ class ScheduleManager:
         # TODO: Increment the 'next_teacher_id' in app_data.
         self.id['next_teacher_id'] += 1
         print(f"Core: Teacher '{name}' added.")
+
 
