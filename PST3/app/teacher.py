@@ -31,6 +31,25 @@ class Course:
         self.enrolled_student_ids = []
         self.lessons = [] # This will hold lesson dictionaries
 
+    """Accessor"""
+    def get_course_id(self):
+        return self.id
+
+    def get_course_name(self):
+        return self.name
+
+    def get_course_instrument(self):
+        return self.instrument
+
+    def get_course_teacher_id(self):
+        return self.teacher_id
+
+    def get_lessons(self):
+        return self.lessons
+
     """Mutator"""
     def set_list_lessons(self, lst_lesson:list):
         self.lessons = lst_lesson
+
+    def enroll_student_in_course(self, student_id:int):
+        self.enrolled_student_ids.append(student_id)
