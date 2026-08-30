@@ -10,3 +10,10 @@ class User:
 
     def get_name(self) -> str:
         return self.name
+
+    """Mutator"""
+    def set_id(self, new_id: int):
+        self.id = new_id
+
+    def set_name(self, new_name: str):
+        self.name = new_name
