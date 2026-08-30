@@ -74,6 +74,8 @@ class ScheduleManager:
             new_course = Course(course['id'], course['name'], course['instrument'], course['teacher_id'])
             if len(course['lessons']) != 0:
                 new_course.set_list_lessons(course['lessons'])
+            if len(course['enrolled_student_ids']) != 0:
+                new_course.set_enroll_student_lst(course['enrolled_student_ids'])
             self.courses[i] = new_course
 
     def check_in(self, student_id, course_id):
@@ -225,12 +227,12 @@ class ScheduleManager:
                 for course in self.courses:
                     if user.get_id() in course.get_enrolled_student_ids():
                         course.remove_enrolled_student_id(user.get_id())
-                        print(f"{user.get_name()} has been removed from course {course.get_id()}.")
+                        print(f"{user.get_name()} has been removed from course {course.get_course_id()}.")
             case TeacherUser():
                 for course in self.courses:
                     if user.get_id() == course.get_course_teacher_id():
                         course.set_teacher_id(-1)   # means no teacher currently taking this course
-                        print(f"{user.get_name()} has been removed from course {course.get_id()}.")
+                        print(f"{user.get_name()} has been removed from course {course.get_course_id()}.")
             case _:
                 print("Invalid type of user, failed to match in any courses.\n")
     
