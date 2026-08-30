@@ -79,7 +79,7 @@ class ScheduleManager:
     def check_in(self, student_id, course_id):
         """Records a student's attendance for a course after validation."""
         # This implementation remains the same, but it will now function correctly.
-        student = self.find_student_by_id(student_id)
+        student = self.find_user_by_id(student_id, "s")
         course = self.find_course_by_id(course_id)
         
         if not student or not course:
@@ -97,12 +97,20 @@ class ScheduleManager:
 
     # TODO: Also implement find_student_by_id and find_course_by_id helper methods.
     # --- Front Desk Functions ---
-    def find_student_by_id(self, student_id):
+    def find_user_by_id(self, user_id, type):
         """A new helper to find one student by their exact ID."""
-        # TODO: Loop through student list. If a student's ID matches student_id, return the student object.
-        for student in self.students:
-            if student.get_id() == student_id:
-                return student
+        match type.lower() or type[0].lower():
+            case "s":
+                # TODO: Loop through student list. If a student's ID matches student_id, return the student object.
+                for student in self.students:
+                    if student.get_id() == user_id:
+                        return student
+            case "t":
+                for teacher in self.teachers:
+                    if teacher.get_id() == user_id:
+                        return teacher
+            case _:
+                print("User not found.\n")
         # TODO: If the loop finishes without finding a match, return None.
         return None
     
@@ -112,7 +120,7 @@ class ScheduleManager:
         # TODO: Loop through course lists. If a student's ID matches student_id, return the course object.
         for course in self.courses:
             if course.get_course_id() == course_id:
-                if enrolled_student_id != 0:
+                if enrolled_student_id != 0:    # if a student enroll in this course
                     course.enroll_student_in_course(enrolled_student_id)
                 return course
         # TODO: If the loop finishes without finding a match, return None.
@@ -160,7 +168,7 @@ class ScheduleManager:
     def front_desk_enrol(self, student_id, course_id):
         """High-level function to enrol an existing student in a course."""
         # TODO: Use your new find_student_by_id() helper.
-        student = self.find_student_by_id(student_id)
+        student = self.find_user_by_id(student_id, "s")
         # TODO: If the student is found, append the course to their 'enrolled_in' list.
         if student:
             course = self.find_course_by_id(course_id)
@@ -187,4 +195,43 @@ class ScheduleManager:
         self.id['next_teacher_id'] += 1
         print(f"Core: Teacher '{name}' added.")
 
+    def remove_user(self, user_id, type):
+        user = StudentUser|TeacherUser
+        match type:
+            case "s":
+                user = self.find_user_by_id(user_id, type)
+            case "t":
+                user = self.find_user_by_id(user_id, type)
+            case _:
+                print("Invalid type of finding a user.\n")
+                return None
+                
+        match user:
+            case StudentUser():
+                self._remove_user_in_course(user)
+                self.students.remove(user)
+                print(f"Student {user.get_name()} has been removed.\n")
+
+            case TeacherUser():
+                self._remove_user_in_course(user)
+                self.teachers.remove(user)
+                print(f"Teacher {user.get_name()} has been removed.\n")
+            case _:
+                print("Invalid type of recognizing a user.\n")
+
+    def _remove_user_in_course(self, user:StudentUser|TeacherUser):
+        match user:
+            case StudentUser():
+                for course in self.courses:
+                    if user.get_id() in course.get_enrolled_student_ids():
+                        course.remove_enrolled_student_id(user.get_id())
+                        print(f"{user.get_name()} has been removed from course {course.get_id()}.")
+            case TeacherUser():
+                for course in self.courses:
+                    if user.get_id() == course.get_course_teacher_id():
+                        course.set_teacher_id(-1)   # means no teacher currently taking this course
+                        print(f"{user.get_name()} has been removed from course {course.get_id()}.")
+            case _:
+                print("Invalid type of user, failed to match in any courses.\n")
+    
 
