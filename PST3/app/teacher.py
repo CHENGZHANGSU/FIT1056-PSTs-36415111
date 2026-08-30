@@ -17,6 +17,7 @@ class TeacherUser(User):
 
     def get_teacher_speciality(self) -> str:
         return self.speciality
+
     
 
 class Course:
@@ -29,3 +30,7 @@ class Course:
         # TODO: Initialize two empty lists: 'enrolled_student_ids' and 'lessons'.
         self.enrolled_student_ids = []
         self.lessons = [] # This will hold lesson dictionaries
+
+    """Mutator"""
+    def set_list_lessons(self, lst_lesson:list):
+        self.lessons = lst_lesson
