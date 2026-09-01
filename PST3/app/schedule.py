@@ -66,7 +66,7 @@ class ScheduleManager:
 
         for i in range(len(self.teachers)):
             teacher = self.teachers[i]
-            new_teacher = TeacherUser(teacher['user_id'], teacher['name'], teacher['speciality'])
+            new_teacher = TeacherUser(teacher['id'], teacher['name'], teacher['speciality'])
             self.teachers[i] = new_teacher
 
         for i in range(len(self.courses)):
@@ -117,16 +117,45 @@ class ScheduleManager:
         return None
     
         
-    def find_course_by_id(self, course_id, enrolled_student_id:int=0):
-        """A new helper to find courses by their exact ID."""
+    def find_course_by_id(self, course_id, enrolled_id:int=0, type="None"):
+        """
+        A new helper to find courses by their exact ID.
+        Implemented any course related actions. (Enroll students or teachers to a course)
+        """
         # TODO: Loop through course lists. If a student's ID matches student_id, return the course object.
         for course in self.courses:
             if course.get_course_id() == course_id:
-                if enrolled_student_id != 0:    # if a student enroll in this course
-                    course.enroll_student_in_course(enrolled_student_id)
+                if int(enrolled_id) != 0:
+                    match type.casefold():
+                        case "s":                   # if a student enroll in this course 
+                            course.enroll_student_in_course(enrolled_id)
+                            return
+                        case "t":                   # if a teacher enroll in this course
+                            self.enroll_teacher_to_course(course, enrolled_id)
+                        case _:
+                            pass
                 return course
         # TODO: If the loop finishes without finding a match, return None.
         return None
+
+    def enroll_teacher_to_course(self, course:Course, enrolled_id:int):
+        """Helper function used to enroll/re-enroll a new teacher in a course"""
+        if course.get_course_teacher_id() != 0:                 # if there exist an enrolled teacher
+            print(f"Teacher {course.get_course_teacher_id()} already enroll in this course.")
+            user_input = input("Do you want to replace? (y/n): ")
+            match user_input[0].lower():
+                case "y":
+                    course.set_teacher_id(enrolled_id)
+                    teacher = self.find_user_by_id(enrolled_id, "t")
+                    if teacher != None:
+                        course.set_instrument(teacher.get_teacher_speciality())
+                case "n":
+                    print("\n")
+                case _:
+                    print("Invalid Syntax occur.\n")
+        elif course.get_course_teacher_id() == 0:               # if no enrolled teacher found
+            course.set_teacher_id(enrolled_id)
+            print(f"Teacher {enrolled_id} has enrolled in course {course.get_course_id()}.\n")
 
     def get_course_list(self):
         return self.courses
@@ -164,26 +193,41 @@ class ScheduleManager:
         self.id['next_student_id'] += 1
         
         # TODO: Immediately call front_desk_enrol() using the new student's ID and the provided instrument.
-        self.front_desk_enrol(new_student.get_id(), course_id)
+        self.front_desk_enrol(new_student.get_id(), course_id, "s")
         print(f"Front Desk: Successfully registered '{name}' and enrolled in '{course_id}'.")
 
-    def front_desk_enrol(self, student_id, course_id):
-        """High-level function to enrol an existing student in a course."""
-        # TODO: Use your new find_student_by_id() helper.
-        student = self.find_user_by_id(student_id, "s")
-        # TODO: If the student is found, append the course to their 'enrolled_in' list.
-        if student:
+    def front_desk_enrol(self, user_id, course_id, type):
+        """High-level function to enrol an existing user in a course."""
+        user = StudentUser|TeacherUser
+        match type:
+            case "s":
+                user = self.find_user_by_id(user_id, type)
+            case "t":
+                user = self.find_user_by_id(user_id, type)
+            case _:
+                print("Invalid type of finding a user.\n")
+                user = None
+
+        # TODO: If the user is found, append the course to their 'enrolled_in' list.
+        if user:
             course = self.find_course_by_id(course_id)
             # If course is valid
             if course:
-                self.find_course_by_id(course_id, student_id)   # Enroll student id into course object
-                student.enroll_course_ids(course_id)            # Enroll course id into student object
-                print(f"Front Desk: Enrolled student {student_id} in '{course_id}'.")
+                match user:
+                    case StudentUser():
+                        self.find_course_by_id(course_id, user_id, "s")      # Enroll student id into course object
+                        user.enroll_course_ids(course_id)               # Enroll course id into student object
+                        print(f"Front Desk: Enrolled student {user_id} in '{course_id}'.")
+                    case TeacherUser():
+                        self.find_course_by_id(course_id, user_id, "t")
+                    case _:
+                        print("Invalid type of finding a user.\n")
+                        return None
             else:
                 print(f"Front Desk: Course id {course_id} not found.")
         else:
-            # TODO: If the student is not found, print an error message like "Error: Student ID not found."
-            print(f"Error: Student ID {student_id} not found.")
+            # TODO: If the user is not found, print an error message like "Error: Student ID not found."
+            print(f"Error: User ID {user_id} not found.")
 
     def add_teacher(self, name, speciality):
         """Adds a teacher dictionary to the data storage."""
@@ -198,6 +242,7 @@ class ScheduleManager:
         print(f"Core: Teacher '{name}' added.")
 
     def remove_user(self, user_id, type):
+        """Removes a user from the system"""
         user = StudentUser|TeacherUser
         match type:
             case "s":
@@ -222,6 +267,7 @@ class ScheduleManager:
                 print("Invalid type of recognizing a user.\n")
 
     def _remove_user_in_course(self, user:StudentUser|TeacherUser):
+        """Removes a user from all courses they are enrolled in or teaching."""
         match user:
             case StudentUser():
                 for course in self.courses:
