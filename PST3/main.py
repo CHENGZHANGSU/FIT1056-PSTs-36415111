@@ -20,7 +20,7 @@ def front_desk_daily_roster(manager, day):
 
 
 def list_user_navigator(manager, type="s"):
-    print("----- Accessing to the database -----")
+    print("\n----- Accessing to the database -----")
     match type.lower() or type[0].lower():
         case "s":
             manager.list_students()
@@ -34,7 +34,7 @@ def list_user_navigator(manager, type="s"):
             print("Invalid Syntax.\n")
 
 def add_user_navigator(manager, type="s"):
-    print("----- Adding user to the database -----")
+    print("\n----- Adding user to the database -----")
     match type.lower() or type[0].lower():
         case "s":
             name = input("Enter the student's name: ")
@@ -44,6 +44,18 @@ def add_user_navigator(manager, type="s"):
             name = input("Enter the teacher's name: ")
             speciality = input("Enter the teacher's speciality: ")
             manager.add_teacher(name, speciality)
+        case _:
+            print("Invalid Syntax.\n")
+
+def remove_user_navigator(manager, type):
+    print("\n----- Removing user from the database -----")
+    match type.lower() or type[0].lower():
+        case "s":
+            student_id = int(input("Enter the student id: "))
+            manager.remove_user(student_id, "s")
+        case "t":
+            teacher_id = int(input("Enter the teacher id: "))
+            manager.remove_user(teacher_id, "t")
         case _:
             print("Invalid Syntax.\n")
 
@@ -98,7 +110,8 @@ def main():
             pass
 
         elif choice == '6':
-            pass
+            type = input("Remove a student or teacher (s/t): ")
+            remove_user_navigator(manager, type)
 
         elif choice == '7':
             pass
