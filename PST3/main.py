@@ -66,8 +66,9 @@ def enrollment_navigator(manager):
     choice = int(input("Please enter your choice: "))
     match choice:
         case 1:
-            manager.front_desk_enrol(int(input("Please enter your student id: ")), int(input("Please enter the course id: ")))
+            manager.front_desk_enrol(int(input("Please enter your student id: ")), int(input("Please enter the course id: ")), "s")
         case 2:
+            manager.front_desk_enrol(int(input("Please enter your teacher id: ")), int(input("Please enter the course id: ")), "t")
             pass
         case _:
             print("Invalid Syntax.")
