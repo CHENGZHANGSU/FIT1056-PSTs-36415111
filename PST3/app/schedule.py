@@ -243,7 +243,7 @@ class ScheduleManager:
                 match user:
                     case StudentUser():
                         self.find_course_by_id(course_id, user_id, "s")      # Enroll student id into course object
-                        user.enroll_course_ids(course_id)               # Enroll course id into student object
+                        user.enroll_course_ids(course_id)                    # Enroll course id into student object
                         print(f"Front Desk: Enrolled student {user_id} in '{course_id}'.")
                     case TeacherUser():
                         self.find_course_by_id(course_id, user_id, "t")
@@ -308,5 +308,32 @@ class ScheduleManager:
                         print(f"{user.get_name()} has been removed from course {course.get_course_id()}.")
             case _:
                 print("Invalid type of user, failed to match in any courses.\n")
+
+    def update_user(self, type, user_id, **field):
+        """Updates a user's information in the system."""
+        simple_reminder = "#: If you don't want to update the respective categories or information, feel free to leave it blank and press 'enter.'\n"
+        match type:
+            case "s":
+                print("\n----- Updating a student user -----")
+                print(simple_reminder)
+                student = self.find_user_by_id(user_id, "s")
+                if student:
+                    student.__update__(field)
+                else:
+                    print("Student {user_id} not found.\n")
+                    return None
+            case "t":
+                print("\n----- Updating a teacher user -----")
+                print(simple_reminder)
+                teacher = self.find_user_by_id(user_id, "t")
+                if teacher:
+                    teacher.__update__(field)
+                else:
+                    print("Teacher {user_id} not found.\n")
+                    return None
+            case _:
+                print("Invalid user detected.\n")
+                return None
+
     
 

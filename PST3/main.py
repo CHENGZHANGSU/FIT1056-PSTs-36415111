@@ -47,6 +47,22 @@ def add_user_navigator(manager, type="s"):
         case _:
             print("Invalid Syntax.\n")
 
+def update_user_navigator(manager, type = "s"):
+    print("\n----- Updating user to the database -----")
+    match type.lower() or type[0].lower():
+        case "s":
+            id = input("Enter your student id: ")
+            name = input("Enter your new name: ")
+            course_id = int(input("Enter the course ID to enrol the student in: "))
+            manager.update_user(type, id, name = name, course_id = course_id)
+        case "t":
+            id = input("Enter your teacher id: ")
+            name = input("Enter your new name: ")
+            speciality = input("Enter your new speciality: ")
+            manager.update_user(type, id, name = name, speciality = speciality)
+        case _:
+            print("Invalid Syntax.\n")
+
 def remove_user_navigator(manager, type):
     print("\n----- Removing user from the database -----")
     match type.lower() or type[0].lower():
