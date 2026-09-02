@@ -10,13 +10,23 @@ class TeacherUser(User):
 
     """Accessor"""
     def get_teacher_id(self) -> int:
-        return super().get_id()
+        id = super().get_id()
+        return id
 
     def get_teacher_name(self) -> str:
-        return super().get_name()
+        name = super().get_name()
+        return name
 
     def get_teacher_speciality(self) -> str:
-        return self.speciality
+        speciality = self.speciality 
+        return speciality
+
+    """Additional Helper Method"""
+    def update(self, **field):
+        if field['name'].replace(" ", "") != "":
+            super().set_name(field['name'])
+        if field['speciality'].replace(" ", "") != "":
+            self.speciality = field['speciality'] 
 
     
 
@@ -33,22 +43,28 @@ class Course:
 
     """Accessor"""
     def get_course_id(self):
-        return self.id
+        id = self.id
+        return id
 
     def get_course_name(self):
-        return self.name
+        name = self.name
+        return name
 
     def get_course_instrument(self):
-        return self.instrument
+        instrument = self.instrument
+        return instrument
 
     def get_course_teacher_id(self):
-        return self.teacher_id
+        course_teacher_id = self.teacher_id
+        return course_teacher_id
 
     def get_enrolled_student_ids(self):
-        return self.enrolled_student_ids
+        enrolled_student_ids = self.enrolled_student_ids
+        return enrolled_student_ids
 
     def get_lessons(self):
-        return self.lessons
+        lessons = self.lessons
+        return lessons
 
     """Mutator"""
     def set_list_lessons(self, lst_lesson:list):
@@ -68,3 +84,7 @@ class Course:
 
     def remove_enrolled_student_id(self, student_id:int):
         self.enrolled_student_ids.remove(student_id)
+
+    """Additional Helper Method"""
+    def update(self, **field):
+        pass
