@@ -117,7 +117,7 @@ class ScheduleManager:
         return None
     
         
-    def find_course_by_id(self, course_id, enrolled_id:int=0, type="None"):
+    def find_course_by_id(self, course_id, enrolled_id:list[int]=[0], type="None"):
         """
         A new helper to find courses by their exact ID.
         Implemented any course related actions. (Enroll students or teachers to a course)
@@ -125,13 +125,13 @@ class ScheduleManager:
         # TODO: Loop through course lists. If a student's ID matches student_id, return the course object.
         for course in self.courses:
             if course.get_course_id() == course_id:
-                if int(enrolled_id) != 0:
+                if int(enrolled_id[0]) != 0:
                     match type.casefold():
                         case "s":                   # if a student enroll in this course 
-                            course.enroll_student_in_course(enrolled_id)
+                            course.enroll_student_in_course(enrolled_id[0])
                             return
                         case "t":                   # if a teacher enroll in this course
-                            self.enroll_teacher_to_course(course, enrolled_id)
+                            self.enroll_teacher_to_course(course, enrolled_id[0])
                         case _:
                             pass
                 return course
@@ -242,11 +242,11 @@ class ScheduleManager:
             if course:
                 match user:
                     case StudentUser():
-                        self.find_course_by_id(course_id, user_id, "s")      # Enroll student id into course object
+                        self.find_course_by_id(course_id, [user_id], "s")      # Enroll student id into course object
                         user.enroll_course_ids(course_id)                    # Enroll course id into student object
                         print(f"Front Desk: Enrolled student {user_id} in '{course_id}'.")
                     case TeacherUser():
-                        self.find_course_by_id(course_id, user_id, "t")
+                        self.find_course_by_id(course_id, [user_id], "t")
                     case _:
                         print("Invalid type of finding a user.\n")
                         return None
@@ -311,23 +311,35 @@ class ScheduleManager:
 
     def update_user(self, type, user_id, **field):
         """Updates a user's information in the system."""
-        simple_reminder = "#: If you don't want to update the respective categories or information, feel free to leave it blank and press 'enter.'\n"
         match type:
             case "s":
                 print("\n----- Updating a student user -----")
-                print(simple_reminder)
                 student = self.find_user_by_id(user_id, "s")
+                choice = input("Do you want to remove or update the course(s)? (r/u): ")
+                
+                # Transform list of string to integer
+                courses = field["course_id"].replace(" ", "").split(",")
+                course_list = [int(x) for x in courses if x.isdigit()]
+
                 if student:
-                    student.__update__(field)
+                    match choice[0].lower():
+                        case "r":
+                            student.remove_enrolled_course_id(field['course_id'])
+                            return
+                        case "u":
+                            student.update(name = field['name'], course_id = course_list)
+                            return
+                        case _:
+                            print("Invalid Syntax.\n")
+                            return None
                 else:
                     print("Student {user_id} not found.\n")
                     return None
             case "t":
                 print("\n----- Updating a teacher user -----")
-                print(simple_reminder)
                 teacher = self.find_user_by_id(user_id, "t")
                 if teacher:
-                    teacher.__update__(field)
+                    teacher.update(field)
                 else:
                     print("Teacher {user_id} not found.\n")
                     return None

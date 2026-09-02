@@ -1,5 +1,8 @@
 # main.py - The View Layer
+from dataclasses import field
+
 from app.schedule import ScheduleManager
+
 
 def front_desk_daily_roster(manager, day):
     """Displays a pretty table of all lessons on a given day."""
@@ -49,14 +52,17 @@ def add_user_navigator(manager, type="s"):
 
 def update_user_navigator(manager, type = "s"):
     print("\n----- Updating user to the database -----")
+    simple_reminder = "#: If you don't want to update the respective categories or information, feel free to leave it blank and press 'enter.'\n"
+    print(simple_reminder)
+    
     match type.lower() or type[0].lower():
         case "s":
-            id = input("Enter your student id: ")
+            id = int(input("Enter your student id: "))
             name = input("Enter your new name: ")
-            course_id = int(input("Enter the course ID to enrol the student in: "))
+            course_id = input("Enter the course ID to enrol the student in (split with , for more than one): ")
             manager.update_user(type, id, name = name, course_id = course_id)
         case "t":
-            id = input("Enter your teacher id: ")
+            id = int(input("Enter your teacher id: "))
             name = input("Enter your new name: ")
             speciality = input("Enter your new speciality: ")
             manager.update_user(type, id, name = name, speciality = speciality)
@@ -129,7 +135,8 @@ def main():
             enrollment_navigator(manager)
 
         elif choice == '5':
-            pass
+            type = input("Update student or teacher? (s/t): ")
+            update_user_navigator(manager, type)
 
         elif choice == '6':
             type = input("Remove a student or teacher (s/t): ")
