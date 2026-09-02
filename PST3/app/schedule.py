@@ -184,6 +184,33 @@ class ScheduleManager:
         """Prints all attendance records in the database"""
         pass
 
+    def print_student_card(self, student_id):
+        """Creates a text file badge for a student."""
+        # TODO: Find the student dictionary in app_data['students'].
+        student_to_print = None
+        for student in self.students:
+            if student.get_id() == student_id:
+                student_to_print = student
+                break
+        
+        if student_to_print:
+            # TODO: Create a filename, e.g., f"{student_id}_card.txt".
+            filename = f"data/{student_id}_card.txt"
+            enrolled_courses = student_to_print.get_enrolled_course_ids()
+            enrolled_courses_str = ', '.join(str(course_id) for course_id in enrolled_courses)
+            # TODO: Open the file in write mode ('w').
+            with open(filename, 'w') as f:
+                # Write the student's details to the file in a nice format.
+                f.write("========================\n")
+                f.write(f"  MUSIC SCHOOL ID BADGE\n")
+                f.write("========================\n")
+                f.write(f"ID: {student_to_print.get_id()}\n")
+                f.write(f"Name: {student_to_print.get_name()}\n")
+                f.write(f"Enrolled In: {enrolled_courses_str}\n")
+            print(f"Printed student card to {filename}.")
+        else:
+            print(f"Error: Could not print card, student {student_id} not found.")
+
     def front_desk_register(self, name, course_id):
         """High-level function to register a new student and enrol them."""
         student_id = self.id['next_student_id']
