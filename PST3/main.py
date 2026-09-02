@@ -74,6 +74,11 @@ def enrollment_navigator(manager):
             print("Invalid Syntax.")
             return 
 
+def print_student_card_navigator(manager):
+    print("\n----- Printing student card -----")
+    student_id = int(input("Enter the student id: "))
+    manager.print_student_card(student_id)
+
 def main():
     """Main function to run the MSMS application."""
     manager = ScheduleManager() # Create ONE instance of the application brain.
@@ -115,7 +120,7 @@ def main():
             remove_user_navigator(manager, type)
 
         elif choice == '7':
-            pass
+            print_student_card_navigator(manager)
 
         elif choice.lower() == 'p':
             pass
