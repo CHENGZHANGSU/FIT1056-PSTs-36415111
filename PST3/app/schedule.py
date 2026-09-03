@@ -52,6 +52,22 @@ class ScheduleManager:
         with open(self.data_path, 'w') as f:
             json.dump(data_to_save, f, indent=4)
 
+    def sync_courses_students(self):
+        """Helper function synchronize enrolled students ids in course. """
+        for course in self.courses:
+            course_id = course.get_course_id()
+            enrolled_student_ids = course.get_enrolled_student_ids()
+
+            for student in self.students:
+                student_id = student.get_id()
+                enrolled_course_ids = student.get_enrolled_course_ids()
+
+                if (course_id in enrolled_course_ids) & (student_id not in enrolled_student_ids):
+                    course.enroll_student_in_course(student_id)       # enroll the missing student in to the course
+                if (course_id not in enrolled_course_ids) & (student_id in enrolled_student_ids):
+                    course.remove_enrolled_student_id(student_id)     # remove the student not enroll in the course
+
+
     def save_all(self):
         self._save_data()
 

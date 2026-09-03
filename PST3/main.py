@@ -54,18 +54,17 @@ def update_user_navigator(manager, type = "s"):
     print("\n----- Updating user to the database -----")
     simple_reminder = "#: If you don't want to update the respective categories or information, feel free to leave it blank and press 'enter.'\n"
     print(simple_reminder)
+    user_id = int(input("Enter your user id: "))
     
     match type.lower() or type[0].lower():
         case "s":
-            id = int(input("Enter your student id: "))
             name = input("Enter your new name: ")
             course_id = input("Enter the course ID to enrol the student in (split with , for more than one): ")
-            manager.update_user(type, id, name = name, course_id = course_id)
+            manager.update_user(type, user_id, name = name, course_id = course_id)
         case "t":
-            id = int(input("Enter your teacher id: "))
             name = input("Enter your new name: ")
             speciality = input("Enter your new speciality: ")
-            manager.update_user(type, id, name = name, speciality = speciality)
+            manager.update_user(type, user_id, name = name, speciality = speciality)
         case _:
             print("Invalid Syntax.\n")
 
@@ -106,6 +105,7 @@ def main():
     manager = ScheduleManager() # Create ONE instance of the application brain.
     
     while True:
+        manager.sync_courses_students()
         print("\n===== MSMS v3 (Object-Oriented) =====")
         # TODO: Create a menu for the new PST3 functions.
         print("1. View Daily Roster")

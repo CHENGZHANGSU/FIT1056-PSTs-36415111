@@ -17,7 +17,7 @@ class StudentUser(User):
         try:
             self.enrolled_course_ids.append(new_course_id)
         except:
-            print("Error occur, please try again")
+            print("Error occur, please try again.\n")
 
     def set_enrolled_course_ids(self, new_course_ids: list):
         self.enrolled_course_ids = new_course_ids
