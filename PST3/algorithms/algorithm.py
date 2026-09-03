@@ -4,9 +4,9 @@ def binary_search(lst, target):
     left, right = 0, len(lst) - 1
     while left <= right:
         mid = (left + right) // 2
-        if lst[mid]['id'] == target:
+        if lst[mid].get_id() == target:
             return mid
-        elif lst[mid]['id'] < target:
+        elif lst[mid].get_id() < target:
             left = mid + 1
         else:
             right = mid - 1
@@ -23,14 +23,14 @@ def merge(lst1, lst2, order):
     i, j = 0, 0
     while i < len(lst1) and j < len(lst2):
         if order == "ascending":
-            if lst1[i]['id'] < lst2[j]['id']:                   # ascending order
+            if lst1[i].get_id() < lst2[j].get_id():             # ascending order
                 new_lst.append(lst1[i])
                 i += 1
             else:
                 new_lst.append(lst2[j])
                 j += 1
         else:                                                   # descending order
-            if lst1[i]['id'] > lst2[j]['id']:
+            if lst1[i].get_id() > lst2[j].get_id():
                 new_lst.append(lst1[i])
                 i += 1
             else:

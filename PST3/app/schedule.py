@@ -2,6 +2,7 @@ import json
 import datetime
 from app.student import StudentUser
 from app.teacher import TeacherUser, Course
+from algorithms.algorithm import merge_sort, binary_search
 
 class ScheduleManager:
     """The main controller for all business logic and data handling."""
@@ -24,7 +25,7 @@ class ScheduleManager:
                 data = json.load(f)
                 # TODO: Load students, teachers, and courses as before.
                 # ...
-                self.students = data.get("students", [])
+                self.students = data.get("students", []) or []
                 self.teachers = data.get("teachers", [])
                 self.courses = data.get("courses", [])
                 # TODO: Correctly load the attendance log.
@@ -53,7 +54,10 @@ class ScheduleManager:
             json.dump(data_to_save, f, indent=4)
 
     def sync_courses_students(self):
-        """Helper function synchronize enrolled students ids in course. """
+        """
+        Helper function synchronize enrolled students ids in course.
+        The course student ids should obey students.
+        """
         for course in self.courses:
             course_id = course.get_course_id()
             enrolled_student_ids = course.get_enrolled_student_ids()
@@ -67,32 +71,34 @@ class ScheduleManager:
                 if (course_id not in enrolled_course_ids) & (student_id in enrolled_student_ids):
                     course.remove_enrolled_student_id(student_id)     # remove the student not enroll in the course
 
-
     def save_all(self):
         self._save_data()
 
     def _to_object(self):
         """Converts dictionaries back to their respective object types."""
-        for i in range(len(self.students)):
-            student = self.students[i]
-            new_student = StudentUser(student['id'], student['name'])
-            if len(student['enrolled_course_ids']) != 0:
-                new_student.set_enrolled_course_ids(student['enrolled_course_ids'])
-            self.students[i] = new_student
+        if len(self.students) != 0:
+            for i in range(len(self.students)):
+                student = self.students[i]
+                new_student = StudentUser(student['id'], student['name'])
+                if len(student['enrolled_course_ids']) != 0:
+                    new_student.set_enrolled_course_ids(student['enrolled_course_ids'])
+                self.students[i] = new_student
 
-        for i in range(len(self.teachers)):
-            teacher = self.teachers[i]
-            new_teacher = TeacherUser(teacher['id'], teacher['name'], teacher['speciality'])
-            self.teachers[i] = new_teacher
+        if len(self.teachers) != 0:
+            for i in range(len(self.teachers)):
+                teacher = self.teachers[i]
+                new_teacher = TeacherUser(teacher['id'], teacher['name'], teacher['speciality'])
+                self.teachers[i] = new_teacher
 
-        for i in range(len(self.courses)):
-            course = self.courses[i]
-            new_course = Course(course['id'], course['name'], course['instrument'], course['teacher_id'])
-            if len(course['lessons']) != 0:
-                new_course.set_list_lessons(course['lessons'])
-            if len(course['enrolled_student_ids']) != 0:
-                new_course.set_enroll_student_lst(course['enrolled_student_ids'])
-            self.courses[i] = new_course
+        if len(self.courses) != 0:
+            for i in range(len(self.courses)):
+                course = self.courses[i]
+                new_course = Course(course['id'], course['name'], course['instrument'], course['teacher_id'])
+                if len(course['lessons']) != 0:
+                    new_course.set_list_lessons(course['lessons'])
+                if len(course['enrolled_student_ids']) != 0:
+                    new_course.set_enroll_student_lst(course['enrolled_student_ids'])
+                self.courses[i] = new_course
 
     def check_in(self, student_id, course_id):
         """Records a student's attendance for a course after validation."""
@@ -118,15 +124,17 @@ class ScheduleManager:
     def find_user_by_id(self, user_id, type):
         """A new helper to find one student by their exact ID."""
         match type.lower() or type[0].lower():
+            # Implement binary search to search for specific users.
             case "s":
-                # TODO: Loop through student list. If a student's ID matches student_id, return the student object.
-                for student in self.students:
-                    if student.get_id() == user_id:
-                        return student
+                self._obey_order("s")
+                index = binary_search(self.students, user_id)
+                if index:
+                    return self.students[index]
             case "t":
-                for teacher in self.teachers:
-                    if teacher.get_id() == user_id:
-                        return teacher
+                self._obey_order("s")
+                index = binary_search(self.teachers, user_id)
+                if index:
+                    return self.teachers[index]
             case _:
                 print("User not found.\n")
         # TODO: If the loop finishes without finding a match, return None.
@@ -142,14 +150,16 @@ class ScheduleManager:
         for course in self.courses:
             if course.get_course_id() == course_id:
                 if int(enrolled_id[0]) != 0:
-                    match type.casefold():
+                    match type[0].casefold():
                         case "s":                   # if a student enroll in this course 
                             course.enroll_student_in_course(enrolled_id[0])
                             return
                         case "t":                   # if a teacher enroll in this course
                             self.enroll_teacher_to_course(course, enrolled_id[0])
-                        case _:
+                        case "None":
                             pass
+                        case _:
+                            print("Invalid Syntax.\n")
                 return course
         # TODO: If the loop finishes without finding a match, return None.
         return None
@@ -176,8 +186,19 @@ class ScheduleManager:
     def get_course_list(self):
         return self.courses
 
-    def list_students(self):
+    def list_students(self, order):
         """Prints all students in the database."""
+        res_lst = []
+        match order[0].lower() or order.lower():
+            case "a":
+                res_lst = self._obey_order("s")
+                self.students = res_lst
+            case "d":
+                res_lst = self._obey_order("s", "descending")
+                self.students = res_lst
+            case _:
+                print("Invalid Syntax.\n")
+
         print("\n--- Student List ---")
         if not self.students:
             print("No students in the system.")
@@ -186,19 +207,41 @@ class ScheduleManager:
         for student in self.students:
             print(f"  ID: {student.get_id()}, Name: {student.get_name()}, Enrolled in: {student.get_enrolled_course_ids()}")
 
-    def list_teachers(self):
+    def list_teachers(self, order):
         """Prints all teachers in the database."""
+        match order[0].lower():
+            case "a":
+                self._obey_order("s") 
+            case "d":
+                self._obey_order("descending", "s")
+            case _:
+                print("Invalid Syntax.\n")
+
         # TODO: Implement the logic to list all teachers, similar to list_students().
         print("\n--- Teacher List ---")
         if not self.teachers:
             print("No teachers in the system.")
-            return
+            return None
         for teacher in self.teachers:
             print(f"  ID: {teacher.get_teacher_id()}, Name: {teacher.get_teacher_name()}, Speciality: {teacher.get_teacher_speciality()}")
 
-    def list_attendance(self):
+    def list_attendance(self, order):
+        match order[0].lower():
+            case "a":
+                self._obey_order("t")
+            case "d":
+                self._obey_order("descending", "t")
+            case _:
+                print("Invalid Syntax.\n")
+                
         """Prints all attendance records in the database"""
-        pass
+        print("\n--- Attendance Records ---")
+        if not self.attendance_log:
+            print("No attendance records in the system.")
+            return None
+        for record in self.attendance_log:
+            print(f"  Student ID: {record['student_id']}, Course ID: {record['course_id']}, Timestamp: {record['timestamp']}")
+
 
     def print_student_card(self, student_id):
         """Creates a text file badge for a student."""
@@ -341,9 +384,11 @@ class ScheduleManager:
                     match choice[0].lower():
                         case "r":
                             student.remove_enrolled_course_id(field['course_id'])
+                            print(f"Student {field['name']} update successfully.\n")
                             return
                         case "u":
                             student.update(name = field['name'], course_id = course_list)
+                            print(f"Student {field['name']} update courses successfully.\n")
                             return
                         case _:
                             print("Invalid Syntax.\n")
@@ -355,7 +400,8 @@ class ScheduleManager:
                 print("\n----- Updating a teacher user -----")
                 teacher = self.find_user_by_id(user_id, "t")
                 if teacher:
-                    teacher.update(field)
+                    teacher.update(name = field['name'], speciality = field['speciality'])
+                    print(f"Teacher {field['name']} update successfully.\n")
                 else:
                     print("Teacher {user_id} not found.\n")
                     return None
@@ -363,5 +409,31 @@ class ScheduleManager:
                 print("Invalid user detected.\n")
                 return None
 
+    def _obey_order(self, type = "s", order = "ascending") -> list:
+        """
+        Sort the database of each list in dict according to user need. 
+        """
+        match type:
+            case "s":
+                return self._sort_data(order, self.students)
+            case "t":
+                return self._sort_data(order, self.teachers)
+            case "c":
+                return self._sort_data(order, self.courses)
+            case "a":
+                return self._sort_data(order, self.attendance_log)
+            case _:
+                print("Invalid Syntax.\n")
+                return []
+
+    def _sort_data(self, order, lst) -> list:
+        match order[0].lower():
+            case "a":
+                return merge_sort(lst, "ascending")
+            case "d":
+                return merge_sort(lst, "descending")
+            case _:
+                print("Invalid Syntax.\n")
+                return []
     
 

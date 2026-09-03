@@ -42,6 +42,10 @@ class Course:
         self.lessons = [] # This will hold lesson dictionaries
 
     """Accessor"""
+    def get_id(self):
+        id = self.id
+        return id
+
     def get_course_id(self):
         id = self.id
         return id

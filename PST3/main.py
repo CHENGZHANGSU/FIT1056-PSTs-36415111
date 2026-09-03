@@ -1,10 +1,8 @@
 # main.py - The View Layer
-from dataclasses import field
-
 from app.schedule import ScheduleManager
 
 
-def front_desk_daily_roster(manager, day):
+def front_desk_daily_roster(manager, day="all"):
     """Displays a pretty table of all lessons on a given day."""
     print(f"\n--- Daily Roster for {day} ---")
     # Notice: This code does not need to change. It doesn't care where the Course class lives.
@@ -15,24 +13,27 @@ def front_desk_daily_roster(manager, day):
         print("\n##################################################################")
         print(f"Lessons {course.get_course_id()} {course.get_course_name()} for {course.get_course_instrument()}")
         for lesson in course.get_lessons():
-            if lesson['day'].casefold() == day.casefold():
+            if (day != "all") and (lesson['day'].casefold() == day.casefold()):
+                course_exist = True
+                print(f"Lesson id {lesson['lesson_id']} on {day}, start at {lesson['start_time']} in {lesson['room']}")
+            elif day == "all":
                 course_exist = True
                 print(f"Lesson id {lesson['lesson_id']} on {day}, start at {lesson['start_time']} in {lesson['room']}")
         if not course_exist:
             print(f"No lesson for {course.get_course_name()} on {day}\n")
 
 
-def list_user_navigator(manager, type="s"):
+def list_user_navigator(manager, order, type="s"):
     print("\n----- Accessing to the database -----")
     match type.lower() or type[0].lower():
         case "s":
-            manager.list_students()
+            manager.list_students(order)
         case "t":
-            manager.list_teachers()
+            manager.list_teachers(order)
         case "a":
-            password = int(input("Enter the password to view attendance: "))
-            if password == password:
-                manager.list_attendance()
+            manager.list_attendance(order)
+        case "c":
+            front_desk_daily_roster(manager)
         case _:
             print("Invalid Syntax.\n")
 
@@ -105,11 +106,11 @@ def main():
     manager = ScheduleManager() # Create ONE instance of the application brain.
     
     while True:
-        manager.sync_courses_students()
+        manager.sync_courses_students()     # Synchronize courses and students consistently.
         print("\n===== MSMS v3 (Object-Oriented) =====")
         # TODO: Create a menu for the new PST3 functions.
         print("1. View Daily Roster")
-        print("2. List User")
+        print("2. List User / Attendance / Course")
         print("3. Add User")
         print("4. Enrollment")
         print("5. Update User")
@@ -124,8 +125,13 @@ def main():
             front_desk_daily_roster(manager, day)
 
         elif choice == '2':
-            res = input("Access student, teacher or attendance? (s/t/a): ")
-            list_user_navigator(manager, res)
+            type = input("List students, teachers or courses? (s/t/c): ")
+            order = ""
+            if type[0].lower() == "c":
+                order = "a"
+            else:
+                order = input("View in ascending or descending method? (a/d): ")
+            list_user_navigator(manager, order, type)
 
         elif choice == '3':
             res = input("Add student or teacher? (s/t): ")
