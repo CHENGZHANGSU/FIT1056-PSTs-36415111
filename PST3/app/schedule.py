@@ -1,5 +1,6 @@
 import json
 import datetime
+import re
 from app.student import StudentUser
 from app.teacher import TeacherUser, Course
 from algorithms.algorithm import merge_sort, binary_search
@@ -25,7 +26,7 @@ class ScheduleManager:
                 data = json.load(f)
                 # TODO: Load students, teachers, and courses as before.
                 # ...
-                self.students = data.get("students", []) or []
+                self.students = data.get("students", [])
                 self.teachers = data.get("teachers", [])
                 self.courses = data.get("courses", [])
                 # TODO: Correctly load the attendance log.
@@ -118,7 +119,9 @@ class ScheduleManager:
         self._save_data() # This will now correctly save the attendance log.
         print(f"Success: Student {student.get_name()} checked into {course.get_course_name()}.")
         return True
+    
 
+#--------------- Search Functions For Data Management ---------------#
     # TODO: Also implement find_student_by_id and find_course_by_id helper methods.
     # --- Front Desk Functions ---
     def find_user_by_id(self, user_id, type):
@@ -128,17 +131,18 @@ class ScheduleManager:
             case "s":
                 self._obey_order("s")
                 index = binary_search(self.students, user_id)
-                if index:
+                if index != None :
                     return self.students[index]
+                return None
             case "t":
-                self._obey_order("s")
+                self._obey_order("t")
                 index = binary_search(self.teachers, user_id)
-                if index:
+                if index != None:
                     return self.teachers[index]
+                return None
             case _:
                 print("User not found.\n")
-        # TODO: If the loop finishes without finding a match, return None.
-        return None
+                return None
     
         
     def find_course_by_id(self, course_id, enrolled_id:list[int]=[0], type="None"):
@@ -164,28 +168,11 @@ class ScheduleManager:
         # TODO: If the loop finishes without finding a match, return None.
         return None
 
-    def enroll_teacher_to_course(self, course:Course, enrolled_id:int):
-        """Helper function used to enroll/re-enroll a new teacher in a course"""
-        if course.get_course_teacher_id() != 0:                 # if there exist an enrolled teacher
-            print(f"Teacher {course.get_course_teacher_id()} already enroll in this course.")
-            user_input = input("Do you want to replace? (y/n): ")
-            match user_input[0].lower():
-                case "y":
-                    course.set_teacher_id(enrolled_id)
-                    teacher = self.find_user_by_id(enrolled_id, "t")
-                    if teacher != None:
-                        course.set_instrument(teacher.get_teacher_speciality())
-                case "n":
-                    print("\n")
-                case _:
-                    print("Invalid Syntax occur.\n")
-        elif course.get_course_teacher_id() == 0:               # if no enrolled teacher found
-            course.set_teacher_id(enrolled_id)
-            print(f"Teacher {enrolled_id} has enrolled in course {course.get_course_id()}.\n")
-
     def get_course_list(self):
         return self.courses
+    
 
+#--------------- Quick View For Database Management ---------------#
     def list_students(self, order):
         """Prints all students in the database."""
         res_lst = []
@@ -213,7 +200,7 @@ class ScheduleManager:
             case "a":
                 self._obey_order("s") 
             case "d":
-                self._obey_order("descending", "s")
+                self._obey_order("s", "descending")
             case _:
                 print("Invalid Syntax.\n")
 
@@ -225,15 +212,7 @@ class ScheduleManager:
         for teacher in self.teachers:
             print(f"  ID: {teacher.get_teacher_id()}, Name: {teacher.get_teacher_name()}, Speciality: {teacher.get_teacher_speciality()}")
 
-    def list_attendance(self, order):
-        match order[0].lower():
-            case "a":
-                self._obey_order("t")
-            case "d":
-                self._obey_order("descending", "t")
-            case _:
-                print("Invalid Syntax.\n")
-                
+    def list_attendance(self):    
         """Prints all attendance records in the database"""
         print("\n--- Attendance Records ---")
         if not self.attendance_log:
@@ -241,6 +220,18 @@ class ScheduleManager:
             return None
         for record in self.attendance_log:
             print(f"  Student ID: {record['student_id']}, Course ID: {record['course_id']}, Timestamp: {record['timestamp']}")
+
+    def list_course_lessons(self):
+        """Print all lessons with the corresponding course"""
+        print("\n--- Lessons ---")
+        course_id = input("Enter the course id: ")
+        course = self.find_course_by_id(course_id)
+        if course:
+            for lesson in course.get_lessons():
+                print(f"  Lesson id: {lesson['lesson_id']} on {lesson['day']}, start at {lesson['start_time']} in {lesson['room']}")
+        else:
+            print("No course or lesson found in the system.")
+            return None
 
 
     def print_student_card(self, student_id):
@@ -270,6 +261,7 @@ class ScheduleManager:
         else:
             print(f"Error: Could not print card, student {student_id} not found.")
 
+#--------------- Front Desk Functions For Database Management ---------------#
     def front_desk_register(self, name, course_id):
         """High-level function to register a new student and enrol them."""
         student_id = self.id['next_student_id']
@@ -301,8 +293,8 @@ class ScheduleManager:
             if course:
                 match user:
                     case StudentUser():
-                        self.find_course_by_id(course_id, [user_id], "s")      # Enroll student id into course object
-                        user.enroll_course_ids(course_id)                    # Enroll course id into student object
+                        self.find_course_by_id(course_id, [user_id], "s")       # Enroll student id into course object
+                        user.enroll_course_ids(course_id)                       # Enroll course id into student object
                         print(f"Front Desk: Enrolled student {user_id} in '{course_id}'.")
                     case TeacherUser():
                         self.find_course_by_id(course_id, [user_id], "t")
@@ -327,6 +319,25 @@ class ScheduleManager:
         self.id['next_teacher_id'] += 1
         print(f"Core: Teacher '{name}' added.")
 
+    def enroll_teacher_to_course(self, course:Course, enrolled_id:int):
+        """Helper function used to enroll/re-enroll a new teacher in a course"""
+        if course.get_course_teacher_id() != 0:                 # if there exist an enrolled teacher
+            print(f"Teacher {course.get_course_teacher_id()} already enroll in this course.")
+            user_input = input("Do you want to replace? (y/n): ")
+            match user_input[0].lower():
+                case "y":
+                    course.set_teacher_id(enrolled_id)
+                    teacher = self.find_user_by_id(enrolled_id, "t")
+                    if teacher != None:
+                        course.set_instrument(teacher.get_teacher_speciality())
+                case "n":
+                    print("\n")
+                case _:
+                    print("Invalid Syntax occur.\n")
+        elif course.get_course_teacher_id() == 0:               # if no enrolled teacher found
+            course.set_teacher_id(enrolled_id)
+            print(f"Teacher {enrolled_id} has enrolled in course {course.get_course_id()}.\n")
+
     def remove_user(self, user_id, type):
         """Removes a user from the system"""
         user = StudentUser|TeacherUser
@@ -338,7 +349,8 @@ class ScheduleManager:
             case _:
                 print("Invalid type of finding a user.\n")
                 return None
-                
+
+        # Remove the user and the responding courses they enrolled or taught
         match user:
             case StudentUser():
                 self._remove_user_in_course(user)
@@ -380,6 +392,7 @@ class ScheduleManager:
                 courses = field["course_id"].replace(" ", "").split(",")
                 course_list = [int(x) for x in courses if x.isdigit()]
 
+                # Remove enrollment or update multiple enrollments
                 if student:
                     match choice[0].lower():
                         case "r":
@@ -394,7 +407,7 @@ class ScheduleManager:
                             print("Invalid Syntax.\n")
                             return None
                 else:
-                    print("Student {user_id} not found.\n")
+                    print(f"Student {user_id} not found.\n")
                     return None
             case "t":
                 print("\n----- Updating a teacher user -----")
@@ -403,12 +416,122 @@ class ScheduleManager:
                     teacher.update(name = field['name'], speciality = field['speciality'])
                     print(f"Teacher {field['name']} update successfully.\n")
                 else:
-                    print("Teacher {user_id} not found.\n")
+                    print(f"Teacher {user_id} not found.\n")
                     return None
             case _:
                 print("Invalid user detected.\n")
                 return None
 
+    def add_course(self, **field):
+        """Add a specific course to the system"""
+        new_course_id = self.id['next_course_id']
+        enrolled_teacher_id = field['teacher_id']
+
+        if self.find_user_by_id(enrolled_teacher_id, "t"):
+            new_course = Course(new_course_id, field['course_name'], field['instrument'], field['teacher_id'])
+
+            self.add_lessons(new_course)                                   # Add lessons into the course through users
+            self.courses.append(new_course)
+            self.id['next_course_id'] += 1
+            sep_string = f"with {new_course.get_course_instrument()} added successfully.\n"
+            print(f"Course {new_course.get_course_id()} {new_course.get_course_name()} by teacher {new_course.get_course_teacher_id()}", sep_string)
+        else:
+            print(f"Teacher {enrolled_teacher_id} not found. Please enroll a valid teacher.\n")
+            return
+
+
+    def _str_to_bool(self, user_input:str) -> bool:
+        match user_input:
+            case "y":
+                return True
+            case "n":
+                return False
+            case _:
+                print("Invalid Syntax.\n")
+                return False
+
+    def _required_lesson_info(self) -> tuple:
+        """Helper method used to collect the lesson related information"""
+        pattern = r"d{2}:d{2}"
+        lesson_id = self.id['next_lesson_id']
+        day = input("Which day the lesson will be (e.g. Monday): ")
+        start_time = input("Enter the lesson time (e.g. 14:30): ")
+
+        if not re.match(pattern, start_time):               # Check the format of datetime 
+            start_time = f"{start_time[0:2]}:{start_time[3:]}"
+
+        room = input("Enter the room of the lesson (e.g. Room A): ")
+        return (lesson_id, day, start_time, room)
+
+    def _lesson_title(self, arg:str) -> bool:
+        arg = f"\nDo you want to {arg} a lesson? (y/n) "
+        user_input = input(arg)[0]
+        choice = self._str_to_bool(user_input)
+        return choice
+
+    def add_lessons(self, course=None):
+        print("\n----- Adding lessons to the course -----")
+        choice = self._lesson_title("add")
+        if course == None:
+            course_id = int(input("Enter the course id need to add lessons: "))
+            course = self.find_course_by_id(course_id)
+
+        if course:
+            lessons = []
+            while choice:
+                info = self._required_lesson_info()
+                new_lesson = {'lesson_id': info[0], 'day': info[1], 'start_time': info[2], 'room': info[3]}
+                lessons.append(new_lesson)
+                self.id['next_lesson_id'] += 1
+                choice = self._lesson_title("add")
+
+            # Check whether the lesson(s) added correctly.
+            course.set_list_lessons(lessons)
+            for lesson in course.get_lessons():
+                print(f"Lesson {lesson['lesson_id']} in course {course.get_course_id()} added successfully.")
+        else:
+            return
+
+    def update_course(self, course_id, **field):
+        """Updates a course's information in the system."""
+        print("\n----- Updating a course from the system -----")
+        course = self.find_course_by_id(course_id)
+        if course:
+            if self.find_user_by_id(field['teacher_id'], "t"):
+                course.update(course_name = field["course_name"], instrument = field['instrument'], teacher_id = field["teacher_id"])
+            else:
+                course.update(course_name = field["course_name"], instrument = field['instrument'], teacher_id = 0)
+                print(f"Teacher {field['teacher_id']} not found, fail to update teacher id. \n")
+            print(f"Course {field['course_name']} updated successfully.\n")
+        else:
+            print(f"Course {course_id} not found.\n")
+            return None
+
+    def update_lesson(self):
+        """Update lessons with the corresponding course"""
+        course_id = int(input("Enter the course id need updates: "))
+        course = self.find_course_by_id(course_id)
+        choice = self._lesson_title("update")
+
+        if course:
+            print(f"\n----- Adding lessons from the course {course.get_course_id()} -----")
+            while choice:
+                lesson_id = int(input("Enter the lesson id need updates: "))
+                info = self._required_lesson_info()
+                field = {'lesson_id': lesson_id, 'day': info[1], 'start_time': info[2], 'room': info[3]}
+                for lesson in course.get_lessons():
+                    if lesson_id == lesson['lesson_id']:
+                        lesson.update(field)
+                        print(f"Lesson {lesson_id} updates successfully.")
+                        break
+                choice = self._lesson_title("update")
+
+        else:
+            print(f"Course {course_id} not found.\n")
+            return None
+
+
+#--------------- Algorithms For Database Management ---------------#
     def _obey_order(self, type = "s", order = "ascending") -> list:
         """
         Sort the database of each list in dict according to user need. 
@@ -423,7 +546,7 @@ class ScheduleManager:
             case "a":
                 return self._sort_data(order, self.attendance_log)
             case _:
-                print("Invalid Syntax.\n")
+                print("Invalid Syntax in order.\n")
                 return []
 
     def _sort_data(self, order, lst) -> list:

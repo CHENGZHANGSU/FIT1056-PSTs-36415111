@@ -24,6 +24,7 @@ def front_desk_daily_roster(manager, day="all"):
 
 
 def list_user_navigator(manager, order, type="s"):
+    """Display students / teachers / attendance / courses information"""
     print("\n----- Accessing to the database -----")
     match type.lower() or type[0].lower():
         case "s":
@@ -31,13 +32,14 @@ def list_user_navigator(manager, order, type="s"):
         case "t":
             manager.list_teachers(order)
         case "a":
-            manager.list_attendance(order)
+            manager.list_attendance()
         case "c":
             front_desk_daily_roster(manager)
         case _:
             print("Invalid Syntax.\n")
 
 def add_user_navigator(manager, type="s"):
+    """Add a new user to the system"""
     print("\n----- Adding user to the database -----")
     match type.lower() or type[0].lower():
         case "s":
@@ -52,6 +54,7 @@ def add_user_navigator(manager, type="s"):
             print("Invalid Syntax.\n")
 
 def update_user_navigator(manager, type = "s"):
+    """Update an existing user from the system"""
     print("\n----- Updating user to the database -----")
     simple_reminder = "#: If you don't want to update the respective categories or information, feel free to leave it blank and press 'enter.'\n"
     print(simple_reminder)
@@ -70,6 +73,7 @@ def update_user_navigator(manager, type = "s"):
             print("Invalid Syntax.\n")
 
 def remove_user_navigator(manager, type):
+    """Remove an existing user from the system"""
     print("\n----- Removing user from the database -----")
     match type.lower() or type[0].lower():
         case "s":
@@ -81,6 +85,54 @@ def remove_user_navigator(manager, type):
         case _:
             print("Invalid Syntax.\n")
 
+def _require_course_info(type = "add") -> tuple:
+    """Helper function to collect course related information"""
+    simple_reminder = "#: If you don't want to update the respective categories or information, feel free to leave it blank and press 'enter.'\n"
+    match type:
+        case "add":                
+            print(simple_reminder)
+            course_name = input("Enter the course name: ")
+            instrument = input("Enter the name of the instrument: ")
+            teacher_id = int(input("Enter the enrolled teacher id: "))
+            return (course_name, instrument, teacher_id)
+        case "update":
+            course_id = int(input("Enter the course id need updates: "))
+            course_name = input("Enter the new course name: ")
+            instrument = input("Enter the name of the instrument: ")
+            teacher_id = int(input("Enter the new enrolled teacher id: "))
+            return (course_id, course_name, instrument, teacher_id)
+        case _:
+            print("Invalid Syntax in collecting course / lesson related information.\n")
+            return ()
+
+def add_course_lessons_navigator(manager, type = "c"):
+    """Add a new course or lesson to the system"""
+    match type[0].lower():
+        case "c":
+            print("\n----- Adding a new course to the database -----")
+            info = _require_course_info()
+            manager.add_course(course_name = info[0], instrument = info[1], teacher_id = info[2])
+        case "l":
+            manager.add_lessons()
+        case _:
+            print("Invalid Syntax in add courses and lessons.\n")
+            return None
+
+def update_course_lessons_navigator(manager, type="c"):
+    """Update an existing course or lesson from the system"""
+    front_desk_daily_roster(manager)
+    print("\n")
+    match type[0].lower():
+        case "c":
+            info = _require_course_info()
+            manager.update_course(course_name = info[0], instrument = info[1], teacher_id = info[2])
+        case "l":
+            info = _require_course_info("update")
+            manager.update_lessons(info[0], course_name = info[1], instrument = info[2], teacher_id = info[3])
+        case _:
+            print("Invalid Syntax in update courses and lessons.\n")
+            return None
+    
 def enrollment_navigator(manager):
     print("\n----- Enrolling events to users -----")
     print("1. Enroll new course as a student")
@@ -115,7 +167,10 @@ def main():
         print("4. Enrollment")
         print("5. Update User")
         print("6. Remove User")
-        print("7. Print student-card")
+        print("7. Add Course")
+        print("8. Update Courses & Lessons")
+        print("9. Remove Courses & Lessons")
+        print("10. Print student-card")
         print("p. Print to .csv")
         print("q. Save and Quit")
         # Get user input and call the appropriate view function, passing 'manager' to it.
@@ -125,9 +180,9 @@ def main():
             front_desk_daily_roster(manager, day)
 
         elif choice == '2':
-            type = input("List students, teachers or courses? (s/t/c): ")
+            type = input("List students, teachers, courses or attendance? (s/t/c/a): ")
             order = ""
-            if type[0].lower() == "c":
+            if type[0].lower() == "c" or type[0].lower() == "a":
                 order = "a"
             else:
                 order = input("View in ascending or descending method? (a/d): ")
@@ -149,6 +204,15 @@ def main():
             remove_user_navigator(manager, type)
 
         elif choice == '7':
+            add_course_lessons_navigator(manager)
+
+        elif choice == '8':
+            update_course_lessons_navigator(manager)
+
+        elif choice == '9':
+            pass
+
+        elif choice == '10':
             print_student_card_navigator(manager)
 
         elif choice.lower() == 'p':

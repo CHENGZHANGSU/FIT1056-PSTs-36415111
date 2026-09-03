@@ -9,6 +9,10 @@ class StudentUser(User):
         self.enrolled_course_ids = []
 
     """Accessor"""
+    def get_id(self) -> int:
+        id = super().get_id()
+        return id
+
     def get_enrolled_course_ids(self):
         return self.enrolled_course_ids
 

@@ -9,6 +9,10 @@ class TeacherUser(User):
         self.speciality = speciality
 
     """Accessor"""
+    def get_id(self) -> int:
+        id = super().get_id()
+        return id
+
     def get_teacher_id(self) -> int:
         id = super().get_id()
         return id
@@ -71,8 +75,17 @@ class Course:
         return lessons
 
     """Mutator"""
+    def set_course_name(self, new_course_name:str):
+        self.name = new_course_name
+    
     def set_list_lessons(self, lst_lesson:list):
         self.lessons = lst_lesson
+
+    def add_lesson_to_course(self, new_lesson:dict):
+        self.lessons.append(new_lesson)
+
+    def remove_lesson_from_course(self, cur_lesson:dict):
+        self.lessons.remove(cur_lesson)
 
     def set_teacher_id(self, new_teacher_id:int):
         self.teacher_id = new_teacher_id
@@ -91,4 +104,9 @@ class Course:
 
     """Additional Helper Method"""
     def update(self, **field):
-        pass
+        if field['course_name'].replace(" ", "") != "":
+            self.set_course_name(field['course_name'])
+        if field['instrument'].replace(" ", "") != "":
+            self.set_instrument(field['instrument'])
+        if field['teacher_id'] != 0:
+            self.set_teacher_id(field['teacher_id'])
