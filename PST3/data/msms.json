@@ -2,15 +2,15 @@
     "students": [
         {
             "id": 1,
-            "name": "Alice Johnson",
+            "name": "Adam",
             "enrolled_course_ids": [
                 101,
-                103
+                102
             ]
         },
         {
             "id": 2,
-            "name": "Bob Williams",
+            "name": "Alan",
             "enrolled_course_ids": [
                 102
             ]
@@ -19,13 +19,8 @@
     "teachers": [
         {
             "id": 1,
-            "name": "Dr. Evelyn Keys",
+            "name": "Winson",
             "speciality": "Piano"
-        },
-        {
-            "id": 2,
-            "name": "Mr. David Fret",
-            "speciality": "Guitar"
         }
     ],
     "courses": [
@@ -58,6 +53,7 @@
             "instrument": "Guitar",
             "teacher_id": 2,
             "enrolled_student_ids": [
+                1,
                 2
             ],
             "lessons": [
@@ -74,10 +70,23 @@
             "name": "Intermediate Piano",
             "instrument": "Piano",
             "teacher_id": 1,
-            "enrolled_student_ids": [
-                1
-            ],
+            "enrolled_student_ids": [],
             "lessons": []
+        },
+        {
+            "id": 104,
+            "name": "Beginner Violin",
+            "instrument": "Violin",
+            "teacher_id": 1,
+            "enrolled_student_ids": [],
+            "lessons": [
+                {
+                    "lesson_id": 4,
+                    "day": "Monday",
+                    "start_time": "14:30",
+                    "room": "Room B"
+                }
+            ]
         }
     ],
     "attendance": [
@@ -91,5 +100,11 @@
             "course_id": 102,
             "timestamp": "2025-07-14T16:02:45.654321"
         }
-    ]
+    ],
+    "id_counters": {
+        "next_student_id": 3,
+        "next_teacher_id": 2,
+        "next_course_id": 105,
+        "next_lesson_id": 5
+    }
 }

@@ -1,6 +1,9 @@
 import json
 import datetime
 import re
+import pandas as pd
+import os
+
 from app.student import StudentUser
 from app.teacher import TeacherUser, Course
 from algorithms.algorithm import merge_sort, binary_search
@@ -97,6 +100,10 @@ class ScheduleManager:
     def save_all(self):
         self._save_data()
 
+    def _refresh(self):
+        self._save_data()
+        self._load_data()
+
     def _to_object(self):
         """Converts dictionaries back to their respective object types."""
         if len(self.students) != 0:
@@ -122,6 +129,11 @@ class ScheduleManager:
                 if len(course['enrolled_student_ids']) != 0:
                     new_course.set_enroll_student_lst(course['enrolled_student_ids'])
                 self.courses[i] = new_course
+
+    def _to_dict(self):
+        self.students = [s.__dict__ for s in self.students]
+        self.teachers = [t.__dict__ for t in self.teachers]
+        self.courses = [c.__dict__ for c in self.courses]
 
     def check_in(self, student_id, course_id):
         """Records a student's attendance for a course after validation."""
@@ -640,4 +652,67 @@ class ScheduleManager:
                 print("Invalid Syntax.\n")
                 return []
     
+#--------------- Print as .csv file for Database Management ---------------#
+    def _return_data(self, type="s") -> list:
+        match type:
+            case "s":
+                return self.students
+            case "t":
+                return self.teachers
+            case "a":
+                return self.attendance_log
+            case _:
+                return []
 
+    def _print_to_csv(self, lst:list, order:str, type:str) -> bool:
+        folder_path = "output_csv"
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        if order.replace(" ", "") != "":
+            self._obey_order(f"{type[0].lower()}", order.casefold())
+        self._to_dict()
+        lst = self._return_data(f"{type[0].lower()}")
+        df = pd.DataFrame(data = lst)
+        try:
+            if len(lst) == 0:
+                print(f"There is nothing inside {type.casefold()} database")
+            df.to_csv(f"{folder_path}/{type.capitalize()}.csv", index = True, encoding = 'utf-8')
+            print("File generated.\n")
+            self._to_object()
+            return True
+        except:
+            self._to_object()
+            print("Error, please check the database and try again.\n")
+            return False  
+
+    def database_to_csv(self) -> bool:
+        """
+        High-level function to transform the database into csv file.
+        """
+        choice = input("Which data should be transformed into .csv file? (s/t/a/whole): ")
+        order = ""
+        if choice[0].lower() != "a":
+            order = input("Which order should the data presented? (ascending / descending): ")
+
+        match (choice[0].lower()):                                         # match various options
+            case "s":
+                return self._print_to_csv(self.students, order, "student")
+            case "t":
+                return self._print_to_csv(self.teachers, order, "teacher")
+            case "a":
+                return self._print_to_csv(self.attendance_log, "", "attendance")
+            case "w":
+                success = False
+                lst = {"student": self.students, "teacher": self.teachers, "attendance": self.attendance_log}
+                for key, value in lst.items():
+                    if key == "attendance":
+                        order = ""
+                    if self._print_to_csv(value, order, key):
+                        success = True
+                    else:
+                        continue
+                return success
+            case _:
+                print("Unknown status")
+                return False

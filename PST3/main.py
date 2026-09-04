@@ -167,6 +167,10 @@ def print_student_card_navigator(manager):
     student_id = int(input("Enter the student id: "))
     manager.print_student_card(student_id)
 
+def print_data_to_csv(manager):
+    print("\n----- Printing data to .csv file -----")
+    manager.database_to_csv()
+
 def _type_title(action:str, p1:str, p2:str, abbrev:str) -> str:
     arg = f"{action} a {p1} or a {p2}? ({abbrev}): "
     type = input(arg)
@@ -238,7 +242,7 @@ def main():
             print_student_card_navigator(manager)
 
         elif choice.lower() == 'p':
-            pass
+            print_data_to_csv(manager)
 
         elif choice.lower() == 'q':
             manager.save_all()

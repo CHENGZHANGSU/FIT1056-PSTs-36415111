@@ -77,7 +77,7 @@ The application reads from `data/msms.json` by default. Menu operations include:
 - View a daily roster for a selected day or all days.
 - List students, teachers, courses, or attendance records.
 - Add students, teachers, courses, and lessons.
-- Enrol a student in a course or assign/reassign a teacher to a course.
+- Enrol a student in a course or assign / reassign a teacher to a course.
 - Update or remove users, courses, and lessons.
 - Print a student card to `data/{student_id}_card.txt`.
 - Export student, teacher, attendance, or complete supported data sets to `output_csv/`.
@@ -93,10 +93,11 @@ Notes:
 
 - `main.py` is the view layer and collects user input before delegating operations to `ScheduleManager`.
 - `app/schedule.py` is the application controller. It owns persistence, searching, sorting, enrolment, course, lesson, attendance, and export operations.
-- `app/user.py` defines the base `User` model; `app/student.py` and `app/teacher.py` define specialized users and the `Course` model.
+- `app/user.py` defines the base `User` model; `app/student.py` and `app/teacher.py` define specialized users via inheritance and the `Course` model.
 - `algorithms/algorithm.py` contains `merge_sort` and `binary_search`.
 - `data/msms.json` stores students, teachers, courses, attendance records, lessons, and the next available IDs.
 - JSON records are converted to model objects by `_to_object()` after loading and converted back for persistence or CSV export.
+- Changes will only be saved once the user choice option `Save and Quit`.
 
 ## How to Contribute?
 
@@ -120,10 +121,10 @@ Manual cover:
 
 - JSON loading and saving through `ScheduleManager`.
 - Student and teacher registration, enrolment, update, and removal.
-- Course and lesson creation, update, display, and removal. (half way)
+- Course and lesson creation, update, display, and removal. (**half way**)
 - Synchronization between student and course enrolment records.
-- Attendance check-in and attendance display. (Manually checked)
-- Student-card and CSV output generation. (Manually checked)
+- Attendance check-in and attendance display. (**Manually checked**)
+- Student-card and CSV output generation. (**Manually checked**)
 - Ascending and descending user searches using the supplied algorithms.
 
 ## Credits
