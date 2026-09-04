@@ -172,7 +172,7 @@ def print_data_to_csv(manager):
     manager.database_to_csv()
 
 def _type_title(action:str, p1:str, p2:str, abbrev:str) -> str:
-    arg = f"{action} a {p1} or a {p2}? ({abbrev}): "
+    arg = f"\n{action} a {p1} or a {p2}? ({abbrev}): "
     type = input(arg)
     return type
 
@@ -184,18 +184,18 @@ def main():
         manager.sync_courses_students()     # Synchronize courses and students consistently.
         print("\n===== MSMS v3 (Object-Oriented) =====")
         # TODO: Create a menu for the new PST3 functions.
-        print("1. View Daily Roster")
-        print("2. List User / Attendance / Course")
-        print("3. Add User")
-        print("4. Enrollment")
-        print("5. Update User")
-        print("6. Remove User")
-        print("7. Add Course")
-        print("8. Update Courses & Lessons")
-        print("9. Remove Courses & Lessons")
+        print("1.  View Daily Roster")
+        print("2.  List User / Attendance / Course")
+        print("3.  Add User")
+        print("4.  Enrollment")
+        print("5.  Update User")
+        print("6.  Remove User")
+        print("7.  Add Course")
+        print("8.  Update Courses & Lessons")
+        print("9.  Remove Courses & Lessons")
         print("10. Print student-card")
-        print("p. Print to .csv")
-        print("q. Save and Quit")
+        print("p.  Print to .csv")
+        print("q.  Save and Quit")
         # Get user input and call the appropriate view function, passing 'manager' to it.
         choice = input("Enter choice: ")
         if choice == '1':
