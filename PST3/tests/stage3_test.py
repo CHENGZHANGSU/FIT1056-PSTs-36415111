@@ -63,7 +63,7 @@ class TestStage3(unittest.TestCase):
     def test_enrolment_and_synchronization(self):
         student = self.manager.find_user_by_id(2, "s")
         course = self.manager.find_course_by_id(103)
-        
+
         assert student is not None
         assert course is not None
 
@@ -99,6 +99,7 @@ class TestStage3(unittest.TestCase):
         assert new_teacher is not None
         assert course is not None
         assert guitar_course is not None
+        
         self.assertEqual(new_teacher.get_teacher_speciality(), "Violin")
 
         self.manager.remove_user(1, "t")
@@ -110,7 +111,7 @@ class TestStage3(unittest.TestCase):
         self.assertNotIn(2, guitar_course.get_enrolled_student_ids())
 
     def test_updates_teacher_information(self):
-        self.manager.update_user("t", 1, name="Updated Teacher", speciality="Cello")
+        self.manager.update_user("t", 1, name = "Updated Teacher", speciality = "Cello")
         teacher = self.manager.find_user_by_id(1, "t")
 
         assert teacher is not None
