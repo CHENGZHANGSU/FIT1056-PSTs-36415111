@@ -18,8 +18,10 @@ def front_desk_daily_roster(manager, day="all"):
                 print(f"Lesson id {lesson['lesson_id']} on {day}, start at {lesson['start_time']} in {lesson['room']}")
             elif day == "all":
                 course_exist = True
-                print(f"Lesson id {lesson['lesson_id']} on {day}, start at {lesson['start_time']} in {lesson['room']}")
-        if not course_exist:
+                print(f"Lesson id {lesson['lesson_id']} on {lesson['day']}, start at {lesson['start_time']} in {lesson['room']}")
+        if not course_exist and day == "all":
+            print(f"No lesson for {course.get_course_name()}\n")
+        elif not course_exist:
             print(f"No lesson for {course.get_course_name()} on {day}\n")
 
 
@@ -124,13 +126,25 @@ def update_course_lessons_navigator(manager, type="c"):
     print("\n")
     match type[0].lower():
         case "c":
-            info = _require_course_info()
-            manager.update_course(course_name = info[0], instrument = info[1], teacher_id = info[2])
-        case "l":
             info = _require_course_info("update")
-            manager.update_lessons(info[0], course_name = info[1], instrument = info[2], teacher_id = info[3])
+            manager.update_course(info[0], course_name = info[1], instrument = info[2], teacher_id = info[3])
+        case "l":
+            manager.update_lesson()
         case _:
             print("Invalid Syntax in update courses and lessons.\n")
+            return None
+        
+def remove_course_lessons_navigator(manager, type="c"):
+    """Remove an existing course or lesson from the system"""
+    front_desk_daily_roster(manager)
+    print("\n")
+    match type[0].lower():
+        case "c":
+            manager.remove_course()
+        case "l":
+            manager.remove_lessons()
+        case _:
+            print("Invalid Syntax in remove courses and lessons.\n")
             return None
     
 def enrollment_navigator(manager):
@@ -152,6 +166,11 @@ def print_student_card_navigator(manager):
     print("\n----- Printing student card -----")
     student_id = int(input("Enter the student id: "))
     manager.print_student_card(student_id)
+
+def _type_title(action:str, p1:str, p2:str, abbrev:str) -> str:
+    arg = f"{action} a {p1} or a {p2}? ({abbrev}): "
+    type = input(arg)
+    return type
 
 def main():
     """Main function to run the MSMS application."""
@@ -189,28 +208,31 @@ def main():
             list_user_navigator(manager, order, type)
 
         elif choice == '3':
-            res = input("Add student or teacher? (s/t): ")
-            add_user_navigator(manager, res)
+            type = _type_title("Add", "student", "teacher", "s/t")
+            add_user_navigator(manager, type)
 
         elif choice == '4':
             enrollment_navigator(manager)
 
         elif choice == '5':
-            type = input("Update student or teacher? (s/t): ")
+            type = _type_title("Update", "student", "teacher", "s/t")
             update_user_navigator(manager, type)
 
         elif choice == '6':
-            type = input("Remove a student or teacher (s/t): ")
+            type = _type_title("Remove", "student", "teacher", "s/t")
             remove_user_navigator(manager, type)
 
         elif choice == '7':
-            add_course_lessons_navigator(manager)
+            type = _type_title("Add", "course", "lesson", "c/l")
+            add_course_lessons_navigator(manager, type)
 
         elif choice == '8':
-            update_course_lessons_navigator(manager)
+            type = _type_title("Update", "course", "lesson", "c/l")
+            update_course_lessons_navigator(manager, type)
 
         elif choice == '9':
-            pass
+            type = _type_title("Remove", "course", "lesson", "c/l")
+            remove_course_lessons_navigator(manager, type)
 
         elif choice == '10':
             print_student_card_navigator(manager)

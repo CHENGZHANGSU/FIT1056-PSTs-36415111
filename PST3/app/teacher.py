@@ -110,3 +110,6 @@ class Course:
             self.set_instrument(field['instrument'])
         if field['teacher_id'] != 0:
             self.set_teacher_id(field['teacher_id'])
+
+    def __str__(self) -> str:
+        return f"Course id: {self.id}, name: {self.name}, taught by teacher {self.teacher_id}, with {len(self.lessons)} lessons.\n"

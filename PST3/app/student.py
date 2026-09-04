@@ -26,18 +26,18 @@ class StudentUser(User):
     def set_enrolled_course_ids(self, new_course_ids: list):
         self.enrolled_course_ids = new_course_ids
 
-    def help_remove_course_id(self, removed_id: int):
+    def _help_remove_course_id(self, removed_id: int):
         try:
-            self.enrolled_course_ids.remove(id)
+            self.enrolled_course_ids.remove(removed_id)
         except:
             print(f"Course {id} is not in your current studying units.\n")
 
-    def remove_enrolled_course_id(self, remove_id: int|list[int]):
+    def remove_enrolled_course_id(self, remove_id: int|list):
         if type(remove_id) == int:
-            self.help_remove_course_id(remove_id)
-        elif type(remove_id) == list[int]:
+            self._help_remove_course_id(remove_id)
+        elif type(remove_id) == list:
             for id in remove_id:
-                self.help_remove_course_id(id)
+                self._help_remove_course_id(id)
         else:
             print("Invalid data type.\n")
 
@@ -50,7 +50,8 @@ class StudentUser(User):
             if len(field['course_id']) != 0:
                 self.enrolled_course_ids = field['course_id']
         else:
-            print(f"{type(field['course_id'])}. ")
             print("Invalid data type.\n")
+
+
 
         

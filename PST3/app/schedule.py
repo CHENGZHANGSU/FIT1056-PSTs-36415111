@@ -54,6 +54,13 @@ class ScheduleManager:
         with open(self.data_path, 'w') as f:
             json.dump(data_to_save, f, indent=4)
 
+    def _course_ids(self) -> list[int]:
+        """Helper function return list of course ids"""
+        lst = []
+        for course in self.courses:
+            lst.append(course.get_course_id())
+        return lst        
+
     def sync_courses_students(self):
         """
         Helper function synchronize enrolled students ids in course.
@@ -71,6 +78,21 @@ class ScheduleManager:
                     course.enroll_student_in_course(student_id)       # enroll the missing student in to the course
                 if (course_id not in enrolled_course_ids) & (student_id in enrolled_student_ids):
                     course.remove_enrolled_student_id(student_id)     # remove the student not enroll in the course
+
+        remove_course_ids = []                                        # remove the enrolled course id in student, if the course is removed
+        for student in self.students:
+            student_id = student.get_id()
+            enrolled_course_ids = student.get_enrolled_course_ids()
+
+            course_exist = True
+            for enrolled_course_id in enrolled_course_ids:
+                if enrolled_course_id not in self._course_ids():      # check the existence of course id
+                    course_exist = False
+                    remove_course_ids.append(enrolled_course_id)
+
+            if not course_exist:
+                student.remove_enrolled_course_id(remove_course_ids)
+                remove_course_ids.clear()
 
     def save_all(self):
         self._save_data()
@@ -221,12 +243,10 @@ class ScheduleManager:
         for record in self.attendance_log:
             print(f"  Student ID: {record['student_id']}, Course ID: {record['course_id']}, Timestamp: {record['timestamp']}")
 
-    def list_course_lessons(self):
+    def list_course_lessons(self, course=None):
         """Print all lessons with the corresponding course"""
-        print("\n--- Lessons ---")
-        course_id = input("Enter the course id: ")
-        course = self.find_course_by_id(course_id)
         if course:
+            print(f"\n--- Lessons in course {course.get_course_id()}---")
             for lesson in course.get_lessons():
                 print(f"  Lesson id: {lesson['lesson_id']} on {lesson['day']}, start at {lesson['start_time']} in {lesson['room']}")
         else:
@@ -397,6 +417,7 @@ class ScheduleManager:
                     match choice[0].lower():
                         case "r":
                             student.remove_enrolled_course_id(field['course_id'])
+                            student.update(name = field['name'], course_id = [])
                             print(f"Student {field['name']} update successfully.\n")
                             return
                         case "u":
@@ -422,6 +443,16 @@ class ScheduleManager:
                 print("Invalid user detected.\n")
                 return None
 
+    def _course_title(self, action:str):
+        arg = f"Enter the course id need to {action}: "
+        user_input = int(input(arg))
+        course = self.find_course_by_id(user_input)
+        if course:
+            return course
+        else:
+            print(f"Course id {user_input} not found, fail to {action}.\n")
+            return None
+
     def add_course(self, **field):
         """Add a specific course to the system"""
         new_course_id = self.id['next_course_id']
@@ -439,8 +470,8 @@ class ScheduleManager:
             print(f"Teacher {enrolled_teacher_id} not found. Please enroll a valid teacher.\n")
             return
 
-
     def _str_to_bool(self, user_input:str) -> bool:
+        """Helper method to convert user input to boolean."""
         match user_input:
             case "y":
                 return True
@@ -457,13 +488,14 @@ class ScheduleManager:
         day = input("Which day the lesson will be (e.g. Monday): ")
         start_time = input("Enter the lesson time (e.g. 14:30): ")
 
-        if not re.match(pattern, start_time):               # Check the format of datetime 
+        if not re.match(pattern, start_time) and start_time.replace(" ", "") != "":               # Check the format of datetime 
             start_time = f"{start_time[0:2]}:{start_time[3:]}"
 
         room = input("Enter the room of the lesson (e.g. Room A): ")
         return (lesson_id, day, start_time, room)
 
     def _lesson_title(self, arg:str) -> bool:
+        """Helper function to consist with OCP principle"""
         arg = f"\nDo you want to {arg} a lesson? (y/n) "
         user_input = input(arg)[0]
         choice = self._str_to_bool(user_input)
@@ -492,10 +524,10 @@ class ScheduleManager:
         else:
             return
 
-    def update_course(self, course_id, **field):
+    def update_course(self, **field):
         """Updates a course's information in the system."""
         print("\n----- Updating a course from the system -----")
-        course = self.find_course_by_id(course_id)
+        course = self._course_title("update")
         if course:
             if self.find_user_by_id(field['teacher_id'], "t"):
                 course.update(course_name = field["course_name"], instrument = field['instrument'], teacher_id = field["teacher_id"])
@@ -503,33 +535,81 @@ class ScheduleManager:
                 course.update(course_name = field["course_name"], instrument = field['instrument'], teacher_id = 0)
                 print(f"Teacher {field['teacher_id']} not found, fail to update teacher id. \n")
             print(f"Course {field['course_name']} updated successfully.\n")
-        else:
-            print(f"Course {course_id} not found.\n")
+
+            choice = self._str_to_bool(input("Do you want to update lessons in this course? (y/n): "))
+            if choice:
+                self.update_lesson(course)
+        else:   
             return None
 
-    def update_lesson(self):
+    def update_lesson(self, course = None):
         """Update lessons with the corresponding course"""
-        course_id = int(input("Enter the course id need updates: "))
-        course = self.find_course_by_id(course_id)
-        choice = self._lesson_title("update")
+        if not course:
+            course = self._course_title("update")
 
         if course:
-            print(f"\n----- Adding lessons from the course {course.get_course_id()} -----")
+            choice = self._lesson_title("update")
             while choice:
+                self.list_course_lessons(course)
+                print(f"\n----- Adding lessons from the course {course.get_course_id()} -----")
                 lesson_id = int(input("Enter the lesson id need updates: "))
                 info = self._required_lesson_info()
                 field = {'lesson_id': lesson_id, 'day': info[1], 'start_time': info[2], 'room': info[3]}
-                for lesson in course.get_lessons():
+                                        
+                for lesson in course.get_lessons():                     # Update the corresponding lesson dictionary
                     if lesson_id == lesson['lesson_id']:
-                        lesson.update(field)
-                        print(f"Lesson {lesson_id} updates successfully.")
+                        updates = field.copy()
+                        for key, value in field.items():                # If user type nothing or same as origin, no need any updates
+                            if (value == lesson[key]) or (value.replace(" ", "") == ""):
+                                updates.pop(key, None)
+                        if len(updates) != 0:
+                            lesson.update(updates)
+                            print(f"Lesson {lesson_id} updates successfully.")
+                        else:
+                            print(f"Lesson {lesson_id} remains the same.")
                         break
-                choice = self._lesson_title("update")
 
+                choice = self._lesson_title("update")
         else:
-            print(f"Course {course_id} not found.\n")
             return None
 
+    def remove_course(self):
+        print("\n----- Removing a course from the system -----")
+        course = self._course_title("remove")
+
+        if course:
+            print(course)
+            choice = self._str_to_bool(input("Do you want to remove this course? (y/n): "))
+            if choice:
+                self.courses.remove(course)
+            else:
+                print(f"Course {course.get_id()} remain unchanged.\n")
+        else:
+            return None
+
+    def remove_lessons(self):
+        """Update lessons with the corresponding course"""
+        course = self._course_title("remove")
+        choice = self._lesson_title("remove")
+
+        if course:
+            print(f"\n----- Removing lessons from the course {course.get_course_id()} -----")
+            while choice:
+                self.list_course_lessons(course)
+                lesson_id = int(input("\nEnter the lesson id need removes: "))
+                                        
+                for lesson in course.get_lessons():         # Update the corresponding lesson dictionary
+                    if lesson_id == lesson['lesson_id']:
+                        course.get_lessons().remove(lesson)
+                        print(f"Lesson {lesson_id} removes successfully.")
+                        break
+
+                if len(course.get_lessons()) == 0:          # if no lesson left, terminate the loop
+                    print(f"No lesson in course {course.get_course_id()}.\n")
+                    return None
+                choice = self._lesson_title("remove")
+        else:
+            return None
 
 #--------------- Algorithms For Database Management ---------------#
     def _obey_order(self, type = "s", order = "ascending") -> list:
@@ -550,6 +630,7 @@ class ScheduleManager:
                 return []
 
     def _sort_data(self, order, lst) -> list:
+        """Sort the system data into different orders"""
         match order[0].lower():
             case "a":
                 return merge_sort(lst, "ascending")
