@@ -1,12 +1,18 @@
-import json
-import datetime
-import re
+import json, datetime, re, os, logging, time
+import streamlit as st
 import pandas as pd
-import os
 
 from app.student import StudentUser
 from app.teacher import TeacherUser, Course
 from algorithms.algorithm import merge_sort, binary_search
+
+from Exceptions.UserNotFound import UserNotFound
+
+logging.basicConfig(
+    level = logging.INFO,
+    format = "%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+log = logging.getLogger("carelog    ")
 
 class ScheduleManager:
     """The main controller for all business logic and data handling."""
@@ -109,7 +115,7 @@ class ScheduleManager:
         if len(self.students) != 0:
             for i in range(len(self.students)):
                 student = self.students[i]
-                new_student = StudentUser(student['id'], student['name'])
+                new_student = StudentUser(student['id'], student['name'], student['enrolled_instruments'])
                 if len(student['enrolled_course_ids']) != 0:
                     new_student.set_enrolled_course_ids(student['enrolled_course_ids'])
                 self.students[i] = new_student
@@ -167,16 +173,15 @@ class ScheduleManager:
                 index = binary_search(self.students, user_id)
                 if index != None :
                     return self.students[index]
-                return None
+                raise UserNotFound(f"Student {user_id} not found.")
             case "t":
                 self._obey_order("t")
                 index = binary_search(self.teachers, user_id)
                 if index != None:
                     return self.teachers[index]
-                return None
+                raise UserNotFound(f"Teacher {user_id} not found.")
             case _:
-                print("User not found.\n")
-                return None
+                raise UserNotFound("User not found.")
     
         
     def find_course_by_id(self, course_id, enrolled_id:list[int]=[0], type="None"):
@@ -214,9 +219,13 @@ class ScheduleManager:
             case "a":
                 res_lst = self._obey_order("s")
                 self.students = res_lst
+                res = [s.__dict__ for s in res_lst]
+                return res
             case "d":
                 res_lst = self._obey_order("s", "descending")
                 self.students = res_lst
+                res = [s.__dict__ for s in res_lst]
+                return res
             case _:
                 print("Invalid Syntax.\n")
 
@@ -294,17 +303,19 @@ class ScheduleManager:
             print(f"Error: Could not print card, student {student_id} not found.")
 
 #--------------- Front Desk Functions For Database Management ---------------#
-    def front_desk_register(self, name, course_id):
+    def front_desk_register(self, name, course_id, instruments:str) -> StudentUser:
         """High-level function to register a new student and enrol them."""
         student_id = self.id['next_student_id']
         # TODO: Create a new Student object, add it to student_db, and increment the ID.
-        new_student = StudentUser(student_id, name)
+        new_student = StudentUser(student_id, name, instruments)
         self.students.append(new_student)
         self.id['next_student_id'] += 1
         
         # TODO: Immediately call front_desk_enrol() using the new student's ID and the provided instrument.
         self.front_desk_enrol(new_student.get_id(), course_id, "s")
         print(f"Front Desk: Successfully registered '{name}' and enrolled in '{course_id}'.")
+        log.info("Student added | id=%s | name=%s | instruments=%s", student_id, name, instruments)
+        return new_student
 
     def front_desk_enrol(self, user_id, course_id, type):
         """High-level function to enrol an existing user in a course."""
@@ -335,9 +346,11 @@ class ScheduleManager:
                         return None
             else:
                 print(f"Front Desk: Course id {course_id} not found.")
+                log.info("Failed to find Course | user_id=%s | course_i=%s", user_id, course_id)
         else:
             # TODO: If the user is not found, print an error message like "Error: Student ID not found."
             print(f"Error: User ID {user_id} not found.")
+            log.info("Failed to find user | user_id=%s", user_id)
 
     def add_teacher(self, name, speciality):
         """Adds a teacher dictionary to the data storage."""
@@ -417,24 +430,37 @@ class ScheduleManager:
         match type:
             case "s":
                 print("\n----- Updating a student user -----")
-                student = self.find_user_by_id(user_id, "s")
-                choice = input("Do you want to remove or update the course(s)? (r/u): ")
+                student = None
+                try:
+                    student = self.find_user_by_id(user_id, "s")
+                except UserNotFound as e:
+                    raise e
+                choice = input("Do you want to remove or update the information? (r/u): ")
                 
                 # Transform list of string to integer
                 courses = field["course_id"].replace(" ", "").split(",")
                 course_list = [int(x) for x in courses if x.isdigit()]
+
+                instruments = field["instrument"].replace(" ", "").split(",")
+                instrument_list = [x for x in instruments if x != ""]
 
                 # Remove enrollment or update multiple enrollments
                 if student:
                     match choice[0].lower():
                         case "r":
                             student.remove_enrolled_course_id(field['course_id'])
-                            student.update(name = field['name'], course_id = [])
+                            student.update(name = field['name'], course_id = [], instruments = [])
+                            st.success(f"Successfully update {field['name']}!")
                             print(f"Student {field['name']} update successfully.\n")
+                            log.info("Student Updated | new_id=%s | new_name=%s | new_courses=%s | new_instruments=%s",
+                                     user_id, field['name'], field['course_id'], field['instrument'])
                             return
                         case "u":
-                            student.update(name = field['name'], course_id = course_list)
+                            student.update(name = field['name'], course_id = course_list, instrument = instrument_list)
+                            st.success(f"Student {field['name']} update courses successfully!")
                             print(f"Student {field['name']} update courses successfully.\n")
+                            log.info("Student Updated | new_id=%s | new_name=%s | new_courses=%s | new_instruments=%s",
+                                     user_id, field['name'], field['course_id'], field['instrument'])
                             return
                         case _:
                             print("Invalid Syntax.\n")
