@@ -1,9 +1,35 @@
 # gui/student_pages.py
 import pandas as pd
 import streamlit as st
-import time
+import time, bcrypt
 
-from Exceptions.UserNotFound import UserNotFound
+from Exceptions.NotFoundException import UserNotFound
+from Security.Verification import Verification
+
+def find_student_page():
+    time.sleep(0.5)
+    show_find_student_page(st.session_state.manager)
+
+def add_student_page():
+    time.sleep(0.5)
+    show_add_student_page(st.session_state.manager)
+
+def update_student_page():
+    time.sleep(0.5)
+    show_update_student_page(st.session_state.manager)
+
+def remove_student_page():
+    time.sleep(0.5)
+    show_remove_student_page(st.session_state.manager)
+
+def list_students_page():
+    time.sleep(0.5)
+    show_student_management_page(st.session_state.manager)
+
+def print_student_card():
+    time.sleep(0.5)
+    show_print_student_card_page(st.session_state.manager)
+
 
 def show_add_student_page(manager):
     # --- Add Section ---#
@@ -92,8 +118,8 @@ def show_remove_student_page(manager):
             student = manager.find_user_by_id(int(select), "s")
         if student:
             user_table(manager, "u", [student.__dict__])
-        else:
-            st.error(f"Could not find this student.") 
+        # else:
+        #     st.error(f"Could not find this student.") 
         confirm = st.checkbox("Confirm Remove")
         delete = st.button("Remove")
 
@@ -127,5 +153,43 @@ def show_student_management_page(manager):
     """Renders all components for the student management page."""
     st.header("Students")
     with st.spinner("Retrieving the Student Database"):
-        time.sleep(2)
         user_table(manager)
+        time.sleep(2)
+        order = st.selectbox("Order", ["ascending", "descending"], index = None, placeholder = "Please choose the order to download")
+        if order:
+            account = st.text_input("Account", placeholder = "Please enter your account to download the student database")
+            password = st.text_input("Password", placeholder = "Please enter your password to download the student database", type = "password")
+            if account and password:
+                verifier = Verification(account, password)
+                if verifier.verify():
+                    csv = manager.database_to_csv("s", order)
+                    download_button = st.download_button(label = "Download Student CSV", data = csv, file_name="Students.csv", mime="text/csv", icon=":material/download:")
+                    if download_button:
+                        st.success("Download successful!")
+                else:
+                    st.error("Incorrect account or password")
+
+def show_print_student_card_page(manager):
+    st.subheader("Student Card")
+    with st.form("Print Card"):
+        reg_student_id = st.text_input(label = "Student ID", placeholder = "Enter your student id: ", type = "search")
+        submitted = st.form_submit_button("Print Student Card")
+
+        if submitted:
+            with st.spinner("Retrieving the Student information"):
+                time.sleep(2)
+
+    if reg_student_id:
+            student = manager.find_user_by_id(int(reg_student_id), "s")
+            if student:
+                filename = manager.print_student_card(int(reg_student_id))
+                with open(f"{filename}", "r") as f:
+                    text = f.read()
+                download_button = st.download_button(label = "Download Student Card", data = text, file_name=f"Student{reg_student_id} card.txt", 
+                                                        mime="text/plain", icon=":material/download:")
+                if download_button:
+                    st.success("Download successful!")
+            else:
+                st.error(f"Could not find this student.")
+    else:
+        st.warning("Please enter your student id.")
