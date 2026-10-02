@@ -1,10 +1,12 @@
 # gui/student_pages.py
 import pandas as pd
 import streamlit as st
-import time, bcrypt
+import time, threading
 
 from Exceptions.NotFoundException import UserNotFound
 from Security.Verification import Verification
+
+lock = threading.Lock()
 
 def find_student_page():
     time.sleep(0.5)
@@ -34,32 +36,33 @@ def print_student_card():
 def show_add_student_page(manager):
     # --- Add Section ---#
     st.subheader("Register New Student")
-    with st.form("registration_form"):
-        reg_name = st.text_input("New Student Name")
-        reg_instrument = st.text_input("First Instrument")
-        reg_course = st.selectbox("Select Course", [c.name for c in manager.courses])
-        reg_course_id = 0
-        for c in manager.courses:
-            if c.name == reg_course:
-                reg_course_id = c.id
-        submitted = st.form_submit_button("Register Student")
-        
-        if submitted:
-            # This call now works because we implemented the method in PST3.
-            # TODO: Add a check for blank name/instrument.
-            with st.spinner(f"Registering for {reg_name}..."):
-                time.sleep(2)
-                if reg_name and reg_instrument:
-                    new_student = manager.front_desk_register(reg_name, reg_course_id, reg_instrument)
-                    if new_student:
-                        st.success(f"Successfully registered {reg_name}!")
-                        st.balloons()
-                        manager.save_all()
-                        # You can use st.balloons() for extra flair.
+    with lock:
+        with st.form("registration_form"):
+            reg_name = st.text_input("New Student Name")
+            reg_instrument = st.text_input("First Instrument")
+            reg_course = st.selectbox("Select Course", [c.name for c in manager.courses])
+            reg_course_id = 0
+            for c in manager.courses:
+                if c.name == reg_course:
+                    reg_course_id = c.id
+            submitted = st.form_submit_button("Register Student")
+            
+            if submitted:
+                # This call now works because we implemented the method in PST3.
+                # TODO: Add a check for blank name/instrument.
+                with st.spinner(f"Registering for {reg_name}..."):
+                    time.sleep(2)
+                    if reg_name and reg_instrument:
+                        new_student = manager.front_desk_register(reg_name, reg_course_id, reg_instrument)
+                        if new_student:
+                            st.success(f"Successfully registered {reg_name}!")
+                            st.balloons()
+                            manager.save_all()
+                            # You can use st.balloons() for extra flair.
+                        else:
+                            st.error(f"Could not register student. A teacher for {reg_instrument} might not be available.")
                     else:
-                        st.error(f"Could not register student. A teacher for {reg_instrument} might not be available.")
-                else:
-                    st.warning("Please enter both a name and an instrument.")
+                        st.warning("Please enter both a name and an instrument.")
 
 def show_find_student_page(manager):
     # --- Search Section ---#
@@ -85,58 +88,60 @@ def show_find_student_page(manager):
 def show_update_student_page(manager):
     # --- Update Section ---#
     st.subheader("Update Student")
-    with st.form("Student Updated Information"):
-        reg_student_id = st.text_input(label = "Student ID", placeholder = "Enter your student id: ")
-        reg_student_name = st.text_input(label = "Student Name", placeholder = "Enter your student name")
-        reg_student_course_ids = st.text_input(label = "Course ID(s)", placeholder = "Enter the course ID to enrol the student in (split with , for more than one): ")
-        reg_student_instruments = st.text_input(label = "Instrument(s)", placeholder = "Enter the instrument you play (split with , when more than 1): ")
-        info = []
-        info.append(reg_student_id)
-        info.append(reg_student_name)
-        info.append(reg_student_course_ids)
-        info.append(reg_student_instruments)
-        submitted = st.form_submit_button("Update Student")
+    with lock:
+        with st.form("Student Updated Information"):
+            reg_student_id = st.text_input(label = "Student ID", placeholder = "Enter your student id: ")
+            reg_student_name = st.text_input(label = "Student Name", placeholder = "Enter your student name")
+            reg_student_course_ids = st.text_input(label = "Course ID(s)", placeholder = "Enter the course ID to enrol the student in (split with , for more than one): ")
+            reg_student_instruments = st.text_input(label = "Instrument(s)", placeholder = "Enter the instrument you play (split with , when more than 1): ")
+            info = []
+            info.append(reg_student_id)
+            info.append(reg_student_name)
+            info.append(reg_student_course_ids)
+            info.append(reg_student_instruments)
+            submitted = st.form_submit_button("Update Student")
 
-        if submitted:
-            if len(info) == 4:
-                with st.spinner(f"Updating for Student {reg_student_name}..."):
-                    time.sleep(2)
-                    try:
-                        manager.update_user("s", int(reg_student_id), name = reg_student_name, course_id = reg_student_course_ids, instrument = reg_student_instruments)
-                        manager.save_all()
-                    except UserNotFound as e:
-                        st.error(str(e))
-            else:
-                st.warning("Please enter your information fully.")
+            if submitted:
+                if len(info) == 4:
+                    with st.spinner(f"Updating for Student {reg_student_name}..."):
+                        time.sleep(2)
+                        try:
+                            manager.update_user("s", int(reg_student_id), name = reg_student_name, course_id = reg_student_course_ids, instrument = reg_student_instruments)
+                            manager.save_all()
+                        except UserNotFound as e:
+                            st.error(str(e))
+                else:
+                    st.warning("Please enter your information fully.")
 
 def show_remove_student_page(manager):
     st.subheader("Remove Student")
-    if manager.students:
-        select = st.selectbox("Select Student ID", [s.get_id() for s in manager.students], index = None, placeholder = "Select or Enter the Student ID")
-        student = None
-        if select:
-            student = manager.find_user_by_id(int(select), "s")
-        if student:
-            user_table(manager, "u", [student.__dict__])
-        # else:
-        #     st.error(f"Could not find this student.") 
-        confirm = st.checkbox("Confirm Remove")
-        delete = st.button("Remove")
+    with lock:
+        if manager.students:
+            select = st.selectbox("Select Student ID", [s.get_id() for s in manager.students], index = None, placeholder = "Select or Enter the Student ID")
+            student = None
+            if select:
+                student = manager.find_user_by_id(int(select), "s")
+            if student:
+                user_table(manager, "u", [student.__dict__])
+            # else:
+            #     st.error(f"Could not find this student.") 
+            confirm = st.checkbox("Confirm Remove")
+            delete = st.button("Remove")
 
-        if delete:
-            if confirm:
-                if select:
-                        with st.spinner("Removing Student..."):
-                            time.sleep(2)
-                            try:
-                                manager.remove_user(int(select), "s")
-                                manager.save_all()
-                            except Exception as e:
-                                st.error(str(e))
+            if delete:
+                if confirm:
+                    if select:
+                            with st.spinner("Removing Student..."):
+                                time.sleep(2)
+                                try:
+                                    manager.remove_user(int(select), "s")
+                                    manager.save_all()
+                                except Exception as e:
+                                    st.error(str(e))
+                    else:
+                        st.error(UserNotFound)
                 else:
-                    st.error(UserNotFound)
-            else:
-                st.info("Please Confirm")
+                    st.info("Please Confirm")
 
 def user_table(manager, type = "s", user = None):
     match type.casefold():
