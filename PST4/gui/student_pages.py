@@ -162,8 +162,8 @@ def show_student_management_page(manager):
         time.sleep(2)
         order = st.selectbox("Order", ["ascending", "descending"], index = None, placeholder = "Please choose the order to download")
         if order:
-            account = st.text_input("Account", placeholder = "Please enter your account to download the student database")
-            password = st.text_input("Password", placeholder = "Please enter your password to download the student database", type = "password")
+            account = st.text_input("Account", placeholder = "Please enter your account to download the student database(admin)")
+            password = st.text_input("Password", placeholder = "Please enter your password to download the student database(admin123)", type = "password")
             if account and password:
                 verifier = Verification(account, password)
                 if verifier.verify():
