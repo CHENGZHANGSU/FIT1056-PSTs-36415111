@@ -6,7 +6,7 @@ from app.student import StudentUser
 from app.teacher import TeacherUser, Course
 from algorithms.algorithm import merge_sort, binary_search
 
-from Exceptions.UserNotFound import UserNotFound
+from Exceptions.NotFoundException import UserNotFound, CourseNotFound
 
 logging.basicConfig(
     level = logging.INFO,
@@ -104,6 +104,7 @@ class ScheduleManager:
                 remove_course_ids.clear()
 
     def save_all(self):
+        self.sync_courses_students()
         self._save_data()
 
     def _refresh(self):
@@ -115,9 +116,11 @@ class ScheduleManager:
         if len(self.students) != 0:
             for i in range(len(self.students)):
                 student = self.students[i]
-                new_student = StudentUser(student['id'], student['name'], student['enrolled_instruments'])
+                new_student = StudentUser(student['id'], student['name'])
                 if len(student['enrolled_course_ids']) != 0:
                     new_student.set_enrolled_course_ids(student['enrolled_course_ids'])
+                if len(student['enrolled_instruments']) != 0:
+                    new_student.set_enrolled_instruments(student['enrolled_instruments'])
                 self.students[i] = new_student
 
         if len(self.teachers) != 0:
@@ -149,6 +152,7 @@ class ScheduleManager:
         
         if not student or not course:
             print("Error: Check-in failed. Invalid Student or Course ID.")
+            log.info("Student check-in failed | id=%s | course=%s", student_id, course_id)
             return False
             
         timestamp = datetime.datetime.now().isoformat()
@@ -158,6 +162,7 @@ class ScheduleManager:
         self.attendance_log.append(check_in_record)
         self._save_data() # This will now correctly save the attendance log.
         print(f"Success: Student {student.get_name()} checked into {course.get_course_name()}.")
+        log.info("Student check-in successfully | id=%s | name=%s | course=%s", student_id, student.get_name(), course.get_course_name())
         return True
     
 
@@ -191,7 +196,7 @@ class ScheduleManager:
         """
         # TODO: Loop through course lists. If a student's ID matches student_id, return the course object.
         for course in self.courses:
-            if course.get_course_id() == course_id:
+            if course.get_course_id() == int(course_id):
                 if int(enrolled_id[0]) != 0:
                     match type[0].casefold():
                         case "s":                   # if a student enroll in this course 
@@ -205,7 +210,63 @@ class ScheduleManager:
                             print("Invalid Syntax.\n")
                 return course
         # TODO: If the loop finishes without finding a match, return None.
-        return None
+        raise CourseNotFound
+
+    def front_desk_daily_roster(self, type:str, course_name = None, weekday = None):
+        match type.casefold():
+            case "c":   # find all the lessons of only given course name (course name provided)
+                if course_name:
+                    course = self._find_course_by_name(course_name)
+                    if course:
+                        return (course, course.get_lessons())
+                    else:
+                        raise CourseNotFound
+            case "l":   # find the lessons on specific weekday given the course name (both)
+                if course_name:
+                    course = self._find_course_by_name(course_name)
+                    if course:
+                        return self._find_lesson(course, weekday)
+                    else:
+                        raise CourseNotFound
+            case "a":   # find all the course and lessons of only given weekday (weekday provided)
+                courses = []
+                lessons = []
+                lst_course = self.courses.copy()
+                for course in lst_course:
+                    found = False
+                    approp_lessons = []
+                    for lesson in course.get_lessons():
+                        if lesson['day'] == str(weekday):
+                            found = True
+                            approp_lessons.append(lesson)
+                    if found:
+                        cur_course = Course(course.get_course_id(), course.get_course_name(), course.get_course_instrument(), course.get_course_teacher_id(),
+                                        course.get_enrolled_student_ids(), course.get_lessons())
+                        courses.append(cur_course)  # if the course contains the lessons with specified weekday
+                        lessons.append(approp_lessons)  # the lessons of the current course with specified weekday
+                if len(courses) >= 1:
+                    return (courses, lessons)
+                else:
+                    raise CourseNotFound
+
+    def _find_course_by_name(self, course_name:str):
+        lst_course = self.courses.copy()
+        for course in lst_course:
+            if course.get_course_name() == str(course_name):
+               return Course(course.get_course_id(), course.get_course_name(), course.get_course_instrument(), course.get_course_teacher_id(), 
+                             course.get_enrolled_student_ids(), course.get_lessons())
+
+    def _find_lesson(self, course:Course, day = None):
+        lessons = []
+        # if the specified weekday exist
+        if day:
+            for lesson in course.get_lessons():
+                if lesson['day'] == str(day):
+                    lessons.append(lesson)   
+            return (course, lessons.copy())
+        else:
+            return(course, course.get_lessons())
+
 
     def get_course_list(self):
         return self.courses
@@ -299,6 +360,7 @@ class ScheduleManager:
                 f.write(f"Name: {student_to_print.get_name()}\n")
                 f.write(f"Enrolled In: {enrolled_courses_str}\n")
             print(f"Printed student card to {filename}.")
+            return filename
         else:
             print(f"Error: Could not print card, student {student_id} not found.")
 
@@ -307,17 +369,17 @@ class ScheduleManager:
         """High-level function to register a new student and enrol them."""
         student_id = self.id['next_student_id']
         # TODO: Create a new Student object, add it to student_db, and increment the ID.
-        new_student = StudentUser(student_id, name, instruments)
+        new_student = StudentUser(student_id, name)
         self.students.append(new_student)
         self.id['next_student_id'] += 1
         
         # TODO: Immediately call front_desk_enrol() using the new student's ID and the provided instrument.
-        self.front_desk_enrol(new_student.get_id(), course_id, "s")
+        self.front_desk_enrol(new_student.get_id(), course_id, "s", instruments)
         print(f"Front Desk: Successfully registered '{name}' and enrolled in '{course_id}'.")
         log.info("Student added | id=%s | name=%s | instruments=%s", student_id, name, instruments)
         return new_student
 
-    def front_desk_enrol(self, user_id, course_id, type):
+    def front_desk_enrol(self, user_id, course_id, type:str, instruments:str):
         """High-level function to enrol an existing user in a course."""
         user = StudentUser|TeacherUser
         match type:
@@ -338,7 +400,9 @@ class ScheduleManager:
                     case StudentUser():
                         self.find_course_by_id(course_id, [user_id], "s")       # Enroll student id into course object
                         user.enroll_course_ids(course_id)                       # Enroll course id into student object
+                        user.set_enrolled_instrument(instruments)               # Set the enrolled instrument for the student
                         print(f"Front Desk: Enrolled student {user_id} in '{course_id}'.")
+                        log.info("Student enrolled successfully | id=%s | course=%s", user_id, course_id)
                     case TeacherUser():
                         self.find_course_by_id(course_id, [user_id], "t")
                     case _:
@@ -346,7 +410,7 @@ class ScheduleManager:
                         return None
             else:
                 print(f"Front Desk: Course id {course_id} not found.")
-                log.info("Failed to find Course | user_id=%s | course_i=%s", user_id, course_id)
+                log.info("Failed to find Course | user_id=%s | course_id=%s", user_id, course_id)
         else:
             # TODO: If the user is not found, print an error message like "Error: Student ID not found."
             print(f"Error: User ID {user_id} not found.")
@@ -389,23 +453,34 @@ class ScheduleManager:
         match type:
             case "s":
                 user = self.find_user_by_id(user_id, type)
+                if not user:
+                    raise UserNotFound
             case "t":
                 user = self.find_user_by_id(user_id, type)
+                if not user:
+                    raise UserNotFound
             case _:
                 print("Invalid type of finding a user.\n")
-                return None
+                raise UserNotFound
 
         # Remove the user and the responding courses they enrolled or taught
         match user:
             case StudentUser():
-                self._remove_user_in_course(user)
-                self.students.remove(user)
-                print(f"Student {user.get_name()} has been removed.\n")
+                try:
+                    self._remove_user_in_course(user)
+                    self.students.remove(user)
+                    print(f"Student {user.get_name()} has been removed.\n")
+                    log.info("Remove a student | id=%s | name=%s", user_id, user.get_name())
+                    self.sync_courses_students()  # Synchronize the enrolled students in courses after updating
+                    st.success(f"Remove the student {user.get_name()} successfully.")
+                except Exception as e:
+                    raise e
 
             case TeacherUser():
                 self._remove_user_in_course(user)
                 self.teachers.remove(user)
                 print(f"Teacher {user.get_name()} has been removed.\n")
+                self.sync_courses_students()  # Synchronize the enrolled students in courses after updating 
             case _:
                 print("Invalid type of recognizing a user.\n")
 
@@ -435,14 +510,14 @@ class ScheduleManager:
                     student = self.find_user_by_id(user_id, "s")
                 except UserNotFound as e:
                     raise e
-                choice = input("Do you want to remove or update the information? (r/u): ")
+                choice = "u"
                 
                 # Transform list of string to integer
                 courses = field["course_id"].replace(" ", "").split(",")
                 course_list = [int(x) for x in courses if x.isdigit()]
 
-                instruments = field["instrument"].replace(" ", "").split(",")
-                instrument_list = [x for x in instruments if x != ""]
+                # instruments = field["instrument"].replace(" ", "").split(",")
+                # instrument_list = [x for x in instruments if x != ""]
 
                 # Remove enrollment or update multiple enrollments
                 if student:
@@ -456,11 +531,12 @@ class ScheduleManager:
                                      user_id, field['name'], field['course_id'], field['instrument'])
                             return
                         case "u":
-                            student.update(name = field['name'], course_id = course_list, instrument = instrument_list)
-                            st.success(f"Student {field['name']} update courses successfully!")
-                            print(f"Student {field['name']} update courses successfully.\n")
+                            student.update(name = field['name'], course_id = course_list, instrument = field['instrument'])
+                            st.success(f"Student {field['name']} update successfully!")
+                            print(f"Student {field['name']} update successfully.\n")
                             log.info("Student Updated | new_id=%s | new_name=%s | new_courses=%s | new_instruments=%s",
                                      user_id, field['name'], field['course_id'], field['instrument'])
+                            self.sync_courses_students()  # Synchronize the enrolled students in courses after updating
                             return
                         case _:
                             print("Invalid Syntax.\n")
@@ -481,14 +557,14 @@ class ScheduleManager:
                 print("Invalid user detected.\n")
                 return None
 
-    def _course_title(self, action:str):
-        arg = f"Enter the course id need to {action}: "
-        user_input = int(input(arg))
-        course = self.find_course_by_id(user_input)
+    def _course_title(self, course_id):
+        # arg = f"Enter the course id need to {action}: "
+        # user_input = int(input(arg))
+        course = self.find_course_by_id(int(course_id))
         if course:
             return course
         else:
-            print(f"Course id {user_input} not found, fail to {action}.\n")
+            print(f"Course id {course_id} not found, fail to update.\n")
             return None
 
     def add_course(self, **field):
@@ -499,14 +575,18 @@ class ScheduleManager:
         if self.find_user_by_id(enrolled_teacher_id, "t"):
             new_course = Course(new_course_id, field['course_name'], field['instrument'], field['teacher_id'])
 
-            self.add_lessons(new_course)                                   # Add lessons into the course through users
+            # self.add_lessons(new_course)                                   # Add lessons into the course through users
             self.courses.append(new_course)
             self.id['next_course_id'] += 1
             sep_string = f"with {new_course.get_course_instrument()} added successfully.\n"
             print(f"Course {new_course.get_course_id()} {new_course.get_course_name()} by teacher {new_course.get_course_teacher_id()}", sep_string)
+            log.info("Course Added | new_id=%s | new_name=%s | new_instrument=%s | new_teacher_id=%s",
+                    new_course.get_course_id(), new_course.get_course_name(), new_course.get_course_instrument(), 
+                    new_course.get_course_teacher_id())
         else:
             print(f"Teacher {enrolled_teacher_id} not found. Please enroll a valid teacher.\n")
-            return
+            log.warning("Course Creation Failed | teacher_id=%s", enrolled_teacher_id)
+            raise UserNotFound
 
     def _str_to_bool(self, user_input:str) -> bool:
         """Helper method to convert user input to boolean."""
@@ -539,24 +619,22 @@ class ScheduleManager:
         choice = self._str_to_bool(user_input)
         return choice
 
-    def add_lessons(self, course=None):
+    def add_lessons(self, course, info):
         print("\n----- Adding lessons to the course -----")
-        choice = self._lesson_title("add")
+        # choice = self._lesson_title("add")
         if course == None:
             course_id = int(input("Enter the course id need to add lessons: "))
             course = self.find_course_by_id(course_id)
 
         if course:
-            lessons = []
-            while choice:
-                info = self._required_lesson_info()
-                new_lesson = {'lesson_id': info[0], 'day': info[1], 'start_time': info[2], 'room': info[3]}
-                lessons.append(new_lesson)
-                self.id['next_lesson_id'] += 1
-                choice = self._lesson_title("add")
+            # while choice:
+            # info = self._required_lesson_info()
+            new_lesson = {'lesson_id': info[0], 'day': info[1], 'start_time': info[2], 'room': info[3]}
+            self.id['next_lesson_id'] += 1
+            # choice = self._lesson_title("add")
 
             # Check whether the lesson(s) added correctly.
-            course.set_list_lessons(lessons)
+            course.add_lesson_to_course(new_lesson)
             for lesson in course.get_lessons():
                 print(f"Lesson {lesson['lesson_id']} in course {course.get_course_id()} added successfully.")
         else:
@@ -565,7 +643,7 @@ class ScheduleManager:
     def update_course(self, **field):
         """Updates a course's information in the system."""
         print("\n----- Updating a course from the system -----")
-        course = self._course_title("update")
+        course = self._course_title(field["course_id"])
         if course:
             if self.find_user_by_id(field['teacher_id'], "t"):
                 course.update(course_name = field["course_name"], instrument = field['instrument'], teacher_id = field["teacher_id"])
@@ -574,54 +652,55 @@ class ScheduleManager:
                 print(f"Teacher {field['teacher_id']} not found, fail to update teacher id. \n")
             print(f"Course {field['course_name']} updated successfully.\n")
 
-            choice = self._str_to_bool(input("Do you want to update lessons in this course? (y/n): "))
-            if choice:
-                self.update_lesson(course)
+            # choice = self._str_to_bool(input("Do you want to update lessons in this course? (y/n): "))
+            # if choice:
+            #     self.update_lesson(course)
         else:   
             return None
 
-    def update_lesson(self, course = None):
+    def update_lesson(self, course, info):
         """Update lessons with the corresponding course"""
-        if not course:
-            course = self._course_title("update")
+        # if not course:
+        #     course = self._course_title("update")
 
         if course:
-            choice = self._lesson_title("update")
-            while choice:
-                self.list_course_lessons(course)
-                print(f"\n----- Adding lessons from the course {course.get_course_id()} -----")
-                lesson_id = int(input("Enter the lesson id need updates: "))
-                info = self._required_lesson_info()
-                field = {'lesson_id': lesson_id, 'day': info[1], 'start_time': info[2], 'room': info[3]}
-                                        
-                for lesson in course.get_lessons():                     # Update the corresponding lesson dictionary
-                    if lesson_id == lesson['lesson_id']:
-                        updates = field.copy()
-                        for key, value in field.items():                # If user type nothing or same as origin, no need any updates
-                            if (value == lesson[key]) or (value.replace(" ", "") == ""):
-                                updates.pop(key, None)
-                        if len(updates) != 0:
-                            lesson.update(updates)
-                            print(f"Lesson {lesson_id} updates successfully.")
-                        else:
-                            print(f"Lesson {lesson_id} remains the same.")
-                        break
+            # choice = self._lesson_title("update")
+            # while choice:
+            self.list_course_lessons(course)
+            print(f"\n----- Adding lessons from the course {course.get_course_id()} -----")
+            # lesson_id = int(input("Enter the lesson id need updates: "))
+            # info = self._required_lesson_info()
+            field = {'lesson_id': info[0], 'day': info[1], 'start_time': info[2], 'room': info[3]}
+                                    
+            for lesson in course.get_lessons():                     # Update the corresponding lesson dictionary
+                if int(info[0]) == lesson['lesson_id']:
+                    updates = field.copy()
+                    for key, value in field.items():                # If user type nothing or same as origin, no need any updates
+                        if (value == lesson[key]) or (value.replace(" ", "") == ""):
+                            updates.pop(key, None)
+                    if len(updates) != 0:
+                        lesson.update(updates)
+                        print(f"Lesson {info[0]} updates successfully.")
+                    else:
+                        print(f"Lesson {info[0]} remains the same.")
+                    break
 
-                choice = self._lesson_title("update")
+                # choice = self._lesson_title("update")
         else:
             return None
 
-    def remove_course(self):
+    def remove_course(self, course):
         print("\n----- Removing a course from the system -----")
-        course = self._course_title("remove")
+        # course = self._course_title("remove")
 
         if course:
             print(course)
-            choice = self._str_to_bool(input("Do you want to remove this course? (y/n): "))
-            if choice:
-                self.courses.remove(course)
-            else:
-                print(f"Course {course.get_id()} remain unchanged.\n")
+            # choice = self._str_to_bool(input("Do you want to remove this course? (y/n): "))
+            # if choice:
+            self.courses.remove(course)
+            for student in self.students:
+                if course.get_course_id() in student.get_enrolled_course_ids():
+                    student.get_enrolled_course_ids().remove(course.get_course_id())
         else:
             return None
 
@@ -690,10 +769,11 @@ class ScheduleManager:
             case _:
                 return []
 
-    def _print_to_csv(self, lst:list, order:str, type:str) -> bool:
-        folder_path = "output_csv"
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+    # @st.cache_data
+    def print_to_csv(self, lst:list, order:str, type:str):
+        # folder_path = "output_csv"
+        # if not os.path.exists(folder_path):
+        #     os.makedirs(folder_path)
 
         if order.replace(" ", "") != "":
             self._obey_order(f"{type[0].lower()}", order.casefold())
@@ -703,38 +783,38 @@ class ScheduleManager:
         try:
             if len(lst) == 0:
                 print(f"There is nothing inside {type.casefold()} database")
-            df.to_csv(f"{folder_path}/{type.capitalize()}.csv", index = True, encoding = 'utf-8')
             print("File generated.\n")
             self._to_object()
-            return True
+            return df.to_csv().encode('utf-8')
+            # return df.to_csv(f"{folder_path}/{type.capitalize()}.csv", index = True, encoding = 'utf-8')
         except:
             self._to_object()
             print("Error, please check the database and try again.\n")
-            return False  
+            return None  
 
-    def database_to_csv(self) -> bool:
+    def database_to_csv(self, choice, order='ascending'):
         """
         High-level function to transform the database into csv file.
         """
-        choice = input("Which data should be transformed into .csv file? (s/t/a/whole): ")
-        order = ""
-        if choice[0].lower() != "a":
-            order = input("Which order should the data presented? (ascending / descending): ")
+        # choice = input("Which data should be transformed into .csv file? (s/t/a/whole): ")
+        # order = ""
+        # if choice[0].lower() != "a":
+        #     order = input("Which order should the data presented? (ascending / descending): ")
 
         match (choice[0].lower()):                                         # match various options
             case "s":
-                return self._print_to_csv(self.students, order, "student")
+                return self.print_to_csv(self.students, order, "student")
             case "t":
-                return self._print_to_csv(self.teachers, order, "teacher")
+                return self.print_to_csv(self.teachers, order, "teacher")
             case "a":
-                return self._print_to_csv(self.attendance_log, "", "attendance")
+                return self.print_to_csv(self.attendance_log, "", "attendance")
             case "w":
                 success = False
                 lst = {"student": self.students, "teacher": self.teachers, "attendance": self.attendance_log}
                 for key, value in lst.items():
                     if key == "attendance":
                         order = ""
-                    if self._print_to_csv(value, order, key):
+                    if self.print_to_csv(value, order, key):
                         success = True
                     else:
                         continue
