@@ -2,30 +2,42 @@
     "students": [
         {
             "id": 1,
-            "name": "Alice Johnson",
+            "name": "Adam",
             "enrolled_course_ids": [
                 101,
-                103
+                102
+            ],
+            "enrolled_instruments": [
+                "Piano",
+                "Guitar"
             ]
         },
         {
             "id": 2,
-            "name": "Bob Williams",
+            "name": "Alan",
             "enrolled_course_ids": [
                 102
+            ],
+            "enrolled_instruments": [
+                "Guitar"
+            ]
+        },
+        {
+            "id": 3,
+            "name": "George",
+            "enrolled_course_ids": [
+                102
+            ],
+            "enrolled_instruments": [
+                "Guitar"
             ]
         }
     ],
     "teachers": [
         {
             "id": 1,
-            "name": "Dr. Evelyn Keys",
+            "name": "Winson",
             "speciality": "Piano"
-        },
-        {
-            "id": 2,
-            "name": "Mr. David Fret",
-            "speciality": "Guitar"
         }
     ],
     "courses": [
@@ -41,14 +53,20 @@
                 {
                     "lesson_id": 1,
                     "day": "Monday",
-                    "start_time": "16:00",
+                    "start_time": "16:00:00",
                     "room": "Room A"
                 },
                 {
                     "lesson_id": 2,
                     "day": "Wednesday",
-                    "start_time": "16:00",
+                    "start_time": "16:00:00",
                     "room": "Room A"
+                },
+                {
+                    "lesson_id": 5,
+                    "day": "Monday",
+                    "start_time": "17:14:00",
+                    "room": "room A"
                 }
             ]
         },
@@ -58,13 +76,15 @@
             "instrument": "Guitar",
             "teacher_id": 2,
             "enrolled_student_ids": [
-                2
+                1,
+                2,
+                3
             ],
             "lessons": [
                 {
                     "lesson_id": 3,
                     "day": "Tuesday",
-                    "start_time": "17:00",
+                    "start_time": "17:00:00",
                     "room": "Room C"
                 }
             ]
@@ -74,9 +94,30 @@
             "name": "Intermediate Piano",
             "instrument": "Piano",
             "teacher_id": 1,
-            "enrolled_student_ids": [
-                1
-            ],
+            "enrolled_student_ids": [],
+            "lessons": []
+        },
+        {
+            "id": 104,
+            "name": "Beginner Violin",
+            "instrument": "Violin",
+            "teacher_id": 1,
+            "enrolled_student_ids": [],
+            "lessons": [
+                {
+                    "lesson_id": 4,
+                    "day": "Monday",
+                    "start_time": "14:30:00",
+                    "room": "Room B"
+                }
+            ]
+        },
+        {
+            "id": 105,
+            "name": "George",
+            "instrument": "Guitar",
+            "teacher_id": 1,
+            "enrolled_student_ids": [],
             "lessons": []
         }
     ],
@@ -90,6 +131,17 @@
             "student_id": 2,
             "course_id": 102,
             "timestamp": "2025-07-14T16:02:45.654321"
+        },
+        {
+            "student_id": 1,
+            "course_id": 103,
+            "timestamp": "2026-09-18T10:02:27.490591"
         }
-    ]
+    ],
+    "id_counters": {
+        "next_student_id": 5,
+        "next_teacher_id": 2,
+        "next_course_id": 106,
+        "next_lesson_id": 6
+    }
 }

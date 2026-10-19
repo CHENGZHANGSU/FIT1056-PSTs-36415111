@@ -40,7 +40,7 @@ def test_create_course(fresh_manager):
 
 def test_enroll_teacher_to_course(fresh_manager):
     # ARRANGE: add a dummy teacher and course
-    fresh_manager.add_teacher("Justin", "Piano")
+    fresh_manager.teachers.append(TeacherUser(1, "Winson", "Piano"))
     fresh_manager.add_course(course_name = "Beginner Piano", 
                             instrument = "Piano", 
                             teacher_id = 1)
@@ -87,23 +87,37 @@ def test_front_desk_enroll(fresh_manager):
     assert fresh_manager.students[0].enrolled_course_ids[0] == 101
     assert fresh_manager.students[0].enrolled_instruments[0] == "Piano"
 
-def test_find_user(fresh_manager):
+@pytest.mark.parametrize("type, user_id, expected_msg", [
+    ("s", 1, "Adam"),
+    ("t", 1, "Fekerri")
+])
+def test_find_user_success(fresh_manager, type, user_id, expected_msg):
     # ARRANGE: Add a dummy student and teacher
     fresh_manager.students.append(StudentUser(1, "Adam"))
     fresh_manager.teachers.append(TeacherUser(1, "Fekerri", "Piano"))
 
     # ACT: Call the method to find these users
-    student_id = fresh_manager.students[0].id
-    student = fresh_manager.find_user_by_id(student_id, "s")
-    teacher_id = fresh_manager.teachers[0].id
-    teacher = fresh_manager.find_user_by_id(teacher_id, "t")
+    user = fresh_manager.find_user_by_id(user_id, type)
 
     # ASSERT: Check the student and teacher is found
-    assert student.id == 1
-    assert student.name == "Adam"
-    assert teacher.id == 1
-    assert teacher.name == "Fekerri"
-    assert teacher.speciality == "Piano"
+    assert user.id == 1
+    assert user.name == expected_msg
+    assert user.id == 1
+    assert user.name == expected_msg
+
+def test_find_user_failed(fresh_manager):
+    # ARRANGE: Start with empty manager
+    # ACT: Call the method to find the not exist user
+    with pytest.raises(UserNotFound) as e:
+        fresh_manager.find_user_by_id(1, "s")
+
+    with pytest.raises(UserNotFound) as z:
+        fresh_manager.find_user_by_id(1, "t")
+
+    # ASSERT: Check the error is raised
+    assert "Student 1 not found." in str(e)
+    assert "Teacher 1 not found." in str(z)
+    
 
 def test_find_course_by_id(fresh_manager):
     # ARRANGE: Add a dummy course into the existing manager
@@ -132,6 +146,36 @@ def test_remove_user(fresh_manager):
     # ASSERT: Check the users are remove correctly
     assert len(fresh_manager.students) == 0
     assert len(fresh_manager.teachers) == 0
+
+def test_update_user(fresh_manager):
+    # ARRANGE: Add a dummy student and teacher user with course
+    fresh_manager.courses.append(Course(101, "Beginner Piano", "Piano", 0))
+    fresh_manager.courses.append(Course(102, "Beginner Violin", "Violin", 0))
+
+    fresh_manager.students.append(StudentUser(1, "Adam"))
+    student_id = fresh_manager.students[0].id
+    fresh_manager.front_desk_enrol(student_id, 101, "s", "Piano")
+
+    fresh_manager.teachers.append(TeacherUser(1, "Fekerri", "Piano"))
+    teacher_id = fresh_manager.teachers[0].id
+
+    # ACT: Call the method to update the user.
+
+    fresh_manager.update_user("s", student_id, 
+                              name = "Leo", course_id = "102", instrument = "Violin")
+    fresh_manager.update_user("t", teacher_id,
+                              name = "Winson", speciality = "Violin")
+    updated_student = fresh_manager.students[0]
+    updated_teacher = fresh_manager.teachers[0]
+    
+    # ASSERT: Check the users are updated successfully
+    assert len(fresh_manager.students) == 1 and len(fresh_manager.teachers) == 1
+    assert updated_student.name == "Leo"
+    assert updated_student.enrolled_course_ids == [102]
+    assert updated_student.enrolled_instruments == ["Piano", "Violin"]
+    assert updated_teacher.name == "Winson"
+    assert updated_teacher.speciality == "Violin"
+    
 
 def test_record_payment_and_history(fresh_manager):
     # ARRANGE: Add a dummy student to the manager for the test.

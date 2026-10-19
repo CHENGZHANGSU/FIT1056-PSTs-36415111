@@ -18,7 +18,7 @@ def show_finance_page(manager):
         
         # TODO: Create a number_input for amount and a text_input for method.
         amount = st.number_input("Payment Amount", min_value=0.01)
-        method = st.text_input("Payment Method (e.g., Credit Card, Cash)")
+        method = st.selectbox("Payment method", ['Credit Card', 'Cash'])
         
         submitted = st.form_submit_button("Record Payment")
         if submitted:
@@ -26,6 +26,7 @@ def show_finance_page(manager):
             # TODO: Call manager.record_payment() and show a success message.
             manager.record_payment(student_id, amount, method)
             st.success(f"Payment of {amount} for {selected_student_name} recorded.")
+            manager.save_all()
 
     # --- Section 2: View Payment History ---
     st.subheader("View Student Payment History")
