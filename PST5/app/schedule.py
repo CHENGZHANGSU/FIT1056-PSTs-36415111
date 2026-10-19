@@ -8,10 +8,10 @@ from algorithms.algorithm import merge_sort, binary_search
 
 from Exceptions.NotFoundException import UserNotFound, CourseNotFound
 
-logging.basicConfig(
-    level = logging.INFO,
-    format = "%(asctime)s %(levelname)s %(name)s %(message)s"
-)
+# logging.basicConfig(
+#     level = logging.INFO,
+#     format = "%(asctime)s %(levelname)s %(name)s %(message)s"
+# )
 log = logging.getLogger("carelog    ")
 
 class ScheduleManager:
@@ -110,7 +110,7 @@ class ScheduleManager:
         self.sync_courses_students()
         self._save_data()
 
-    def _refresh(self):
+    def refresh(self):
         self._save_data()
         self._load_data()
 
@@ -141,6 +141,10 @@ class ScheduleManager:
                 if len(course['enrolled_student_ids']) != 0:
                     new_course.set_enroll_student_lst(course['enrolled_student_ids'])
                 self.courses[i] = new_course
+
+        if len(self.id) == 0:
+            self.id = {'next_student_id': 1, 'next_teacher_id': 1,
+                        'next_course_id': 101, 'next_lesson_id': 1}
 
     def _to_dict(self):
         self.students = [s.__dict__ for s in self.students]
@@ -206,7 +210,7 @@ class ScheduleManager:
                             course.enroll_student_in_course(enrolled_id[0])
                             return
                         case "t":                   # if a teacher enroll in this course
-                            self.enroll_teacher_to_course(course, enrolled_id[0])
+                            self.enroll_teacher_to_course(course, enrolled_id[0], True)
                         case "None":
                             pass
                         case _:
@@ -431,21 +435,26 @@ class ScheduleManager:
         self.id['next_teacher_id'] += 1
         print(f"Core: Teacher '{name}' added.")
 
-    def enroll_teacher_to_course(self, course:Course, enrolled_id:int):
+    def enroll_teacher_to_course(self, course:Course, enrolled_id:int, replace:bool):
         """Helper function used to enroll/re-enroll a new teacher in a course"""
         if course.get_course_teacher_id() != 0:                 # if there exist an enrolled teacher
             print(f"Teacher {course.get_course_teacher_id()} already enroll in this course.")
-            user_input = input("Do you want to replace? (y/n): ")
-            match user_input[0].lower():
-                case "y":
-                    course.set_teacher_id(enrolled_id)
-                    teacher = self.find_user_by_id(enrolled_id, "t")
-                    if teacher != None:
-                        course.set_instrument(teacher.get_teacher_speciality())
-                case "n":
-                    print("\n")
-                case _:
-                    print("Invalid Syntax occur.\n")
+            # user_input = input("Do you want to replace? (y/n): ")
+            # match user_input[0].lower():
+            #     case "y":
+            #         course.set_teacher_id(enrolled_id)
+            #         teacher = self.find_user_by_id(enrolled_id, "t")
+            #         if teacher != None:
+            #             course.set_instrument(teacher.get_teacher_speciality())
+            #     case "n":
+            #         print("\n")
+            #     case _:
+            #         print("Invalid Syntax occur.\n")
+            if replace:
+                course.set_teacher_id(enrolled_id)
+                teacher = self.find_user_by_id(enrolled_id, "t")
+                if teacher != None:
+                    course.set_instrument(teacher.get_teacher_speciality())
         elif course.get_course_teacher_id() == 0:               # if no enrolled teacher found
             course.set_teacher_id(enrolled_id)
             print(f"Teacher {enrolled_id} has enrolled in course {course.get_course_id()}.\n")
@@ -575,21 +584,28 @@ class ScheduleManager:
         new_course_id = self.id['next_course_id']
         enrolled_teacher_id = field['teacher_id']
 
-        if self.find_user_by_id(enrolled_teacher_id, "t"):
-            new_course = Course(new_course_id, field['course_name'], field['instrument'], field['teacher_id'])
+        try:
+            if self.find_user_by_id(enrolled_teacher_id, "t"):
+                new_course = Course(new_course_id, field['course_name'], field['instrument'], field['teacher_id'])
 
-            # self.add_lessons(new_course)                                   # Add lessons into the course through users
+                # self.add_lessons(new_course)                                   # Add lessons into the course through users
+                self.courses.append(new_course)
+                self.id['next_course_id'] += 1
+                sep_string = f"with {new_course.get_course_instrument()} added successfully.\n"
+                print(f"Course {new_course.get_course_id()} {new_course.get_course_name()} by teacher {new_course.get_course_teacher_id()} %s", sep_string)
+                log.info("Course Added | new_id=%s | new_name=%s | new_instrument=%s | new_teacher_id=%s",
+                        new_course.get_course_id(), new_course.get_course_name(), new_course.get_course_instrument(), 
+                        new_course.get_course_teacher_id())
+        except:
+            new_course = Course(new_course_id, field['course_name'], field['instrument'], 0)
             self.courses.append(new_course)
             self.id['next_course_id'] += 1
-            sep_string = f"with {new_course.get_course_instrument()} added successfully.\n"
-            print(f"Course {new_course.get_course_id()} {new_course.get_course_name()} by teacher {new_course.get_course_teacher_id()}", sep_string)
             log.info("Course Added | new_id=%s | new_name=%s | new_instrument=%s | new_teacher_id=%s",
                     new_course.get_course_id(), new_course.get_course_name(), new_course.get_course_instrument(), 
                     new_course.get_course_teacher_id())
-        else:
             print(f"Teacher {enrolled_teacher_id} not found. Please enroll a valid teacher.\n")
-            log.warning("Course Creation Failed | teacher_id=%s", enrolled_teacher_id)
-            raise UserNotFound
+            log.warning("Course Creation Warns | teacher_id=%s not found", enrolled_teacher_id)
+            raise UserNotFound("Teacher not found")
 
     def _str_to_bool(self, user_input:str) -> bool:
         """Helper method to convert user input to boolean."""
@@ -736,8 +752,9 @@ class ScheduleManager:
         """
         Record the new payment from student as dictionary.
         """
-        new_payment = {"student_id": student_id, "amount": amount, "payment method": method, "timestamp": datetime.datetime.now().isoformat()}
+        new_payment = {"student_id": student_id, "amount": amount, "method": method, "timestamp": datetime.datetime.now().isoformat()}
         try:
+            self.find_user_by_id(int(student_id), "s")
             self.finance_log.append(new_payment)
             log.info("Payment success | student_id=%s | amount=%s | payment method=%s | t", student_id, amount, method)
             return True
@@ -750,11 +767,12 @@ class ScheduleManager:
         Retrieve all the payment records for a student via id.
         """
         records = []
-        student = self.find_user_by_id(int(student_id), "s")
-
-        if not student:
+        try:
+            self.find_user_by_id(int(student_id), "s")
+        except:
             log.warning("Student not found | student_id=%s", student_id)
             return records
+
 
         for finance in self.finance_log:
             if int(finance['student_id']) == int(student_id):
